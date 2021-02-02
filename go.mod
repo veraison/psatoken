@@ -1,4 +1,4 @@
-module veraison/psatoken
+module github.com/veraison/psatoken
 
 go 1.15
 
