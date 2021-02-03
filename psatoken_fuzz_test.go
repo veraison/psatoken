@@ -15,7 +15,7 @@ import (
 
 // Fuzz is invoked by go-fuzz on the corpus
 func Fuzz(data []byte) int {
-	p := Claims{}
+	p := PSATokenClaims{}
 
 	err := p.FromCBOR(data)
 	if err != nil {
@@ -32,7 +32,7 @@ func Fuzz(data []byte) int {
 
 // Invoke "make crashers" to run this test after go-fuzz completes, or even
 // while go-fuzz is running if it's reporting any crasher already.
-func TestClaims_fuzzer_crashers(t *testing.T) {
+func TestPSATokenClaims(t *testing.T) {
 	if os.Getenv("TEST_FUZZ_CRASHERS") == "" {
 		t.Skip("Skipping fuzz crashers")
 	}
@@ -72,7 +72,7 @@ WARNING: there is a >0 chance that one or more of the following test cases
 
 		t.Logf("running crasher %s", f.Name())
 
-		p := Claims{}
+		p := PSATokenClaims{}
 
 		// Ignore error, the go-fuzz promise is the test case will hang
 		// or crash and we can attach a debugger.

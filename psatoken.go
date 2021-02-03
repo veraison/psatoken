@@ -1,9 +1,8 @@
 // Copyright 2021 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
+// Package psatoken provides an implementation of draft-tschofenig-rats-psa-token-05
 package psatoken
-
-// The psatoken package provides an implementation of draft-tschofenig-rats-psa-token-05
 
 import (
 	"crypto"
@@ -34,8 +33,9 @@ type PSASwComponent struct {
 	MeasurementDesc  string  `cbor:"6,keyasint,omitempty" json:"measurement-description,omitempty"`
 }
 
-// Claims is the wrapper around PSA claims
-type Claims struct {
+// PSATokenClaims is the wrapper around PSA claims
+// nolint: golint
+type PSATokenClaims struct {
 	Profile           *string          `cbor:"-75000,keyasint" json:"profile"`
 	PartitionID       *int32           `cbor:"-75001,keyasint" json:"partition-id"`
 	SecurityLifeCycle *uint16          `cbor:"-75002,keyasint" json:"security-life-cycle"`
@@ -55,8 +55,9 @@ type Claims struct {
 
 // PSAToken is the wrapper around the PSA token, including the COSE envelope and
 // the underlying claims
+// nolint: golint
 type PSAToken struct {
-	Claims
+	PSATokenClaims
 	message *cose.Sign1Message
 }
 
@@ -127,7 +128,7 @@ func securityLifeCycleToString(v uint16) string {
 	return "invalid"
 }
 
-// FromCOSE unwraps a Claim from the supplied CWT (For now only
+// FromCOSE unwraps a PSATokenClaims from the supplied CWT (For now only
 // COSE-Sign1 wrapping is supported.)
 func (p *PSAToken) FromCOSE(cwt []byte) error {
 	if !cose.IsSign1Message(cwt) {
@@ -158,7 +159,7 @@ func (p PSAToken) Sign(signer *cose.Signer) ([]byte, error) {
 	p.message = cose.NewSign1Message()
 
 	var err error
-	p.message.Payload, err = p.Claims.ToCBOR()
+	p.message.Payload, err = p.PSATokenClaims.ToCBOR()
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +208,7 @@ func (p *PSAToken) Verify(pk crypto.PublicKey) error {
 	return nil
 }
 
-func (p Claims) validate() error {
+func (p PSATokenClaims) validate() error {
 	err := p.validateProfile()
 	if err != nil {
 		return err
@@ -258,7 +259,7 @@ func (p Claims) validate() error {
 	return nil
 }
 
-func (p Claims) validateProfile() error {
+func (p PSATokenClaims) validateProfile() error {
 	v := p.Profile
 
 	if v != nil && *v != PSA_PROFILE_1 {
@@ -271,7 +272,7 @@ func (p Claims) validateProfile() error {
 	return nil
 }
 
-func (p Claims) validatePartitionID() error {
+func (p PSATokenClaims) validatePartitionID() error {
 	if p.PartitionID == nil {
 		return fmt.Errorf("missing mandatory partition-id")
 	}
@@ -280,7 +281,7 @@ func (p Claims) validatePartitionID() error {
 	return nil
 }
 
-func (p Claims) validateSecurityLifeCycle() error {
+func (p PSATokenClaims) validateSecurityLifeCycle() error {
 	v := p.SecurityLifeCycle
 
 	if v == nil {
@@ -301,7 +302,7 @@ func (p Claims) validateSecurityLifeCycle() error {
 	)
 }
 
-func (p Claims) validateImplID() error {
+func (p PSATokenClaims) validateImplID() error {
 	if p.ImplID == nil {
 		return fmt.Errorf("missing mandatory implementation-id")
 	}
@@ -318,7 +319,7 @@ func (p Claims) validateImplID() error {
 	return nil
 }
 
-func (p Claims) validateInstID() error {
+func (p PSATokenClaims) validateInstID() error {
 	if p.InstID == nil {
 		return fmt.Errorf("missing mandatory instance-id")
 	}
@@ -341,7 +342,7 @@ func (p Claims) validateInstID() error {
 	return nil
 }
 
-func (p Claims) validateBootSeed() error {
+func (p PSATokenClaims) validateBootSeed() error {
 	if p.BootSeed == nil {
 		return fmt.Errorf("missing mandatory boot-seed")
 	}
@@ -358,7 +359,7 @@ func (p Claims) validateBootSeed() error {
 	return nil
 }
 
-func (p Claims) validateHwVersion() error {
+func (p PSATokenClaims) validateHwVersion() error {
 	if p.HwVersion == nil {
 		return nil
 	}
@@ -374,7 +375,7 @@ func (p Claims) validateHwVersion() error {
 	return nil
 }
 
-func (p Claims) validateNonce() error {
+func (p PSATokenClaims) validateNonce() error {
 	if p.Nonce == nil {
 		return fmt.Errorf("missing mandatory nonce")
 	}
@@ -386,7 +387,7 @@ func (p Claims) validateNonce() error {
 	return nil
 }
 
-func (p Claims) validateSwComponents() error {
+func (p PSATokenClaims) validateSwComponents() error {
 	if p.NoSwMeasurements == 1 {
 		if len(p.SwComponents) != 0 {
 			return fmt.Errorf("no-software-measurements and software-components are mutually exclusive")
@@ -456,12 +457,12 @@ func isPSAHashType(b []byte) error {
 
 // decorate does type enrichment on the token, to add "hidden" attributes
 // that will only be visible in the JSON (internal) encoding.
-func (p *Claims) decorate() {
+func (p *PSATokenClaims) decorate() {
 	p.decorateSecurityLifeCycle()
 	p.decoratePartitionID()
 }
 
-func (p *Claims) decorateSecurityLifeCycle() {
+func (p *PSATokenClaims) decorateSecurityLifeCycle() {
 	// populate "_security-lifecycle-desc"
 	if p.SecurityLifeCycle != nil {
 		p.SecurityLifeCycleDesc = securityLifeCycleToString(*p.SecurityLifeCycle)
@@ -475,15 +476,15 @@ func partitionIDToString(pid int32) string {
 	return "spe"
 }
 
-func (p *Claims) decoratePartitionID() {
+func (p *PSATokenClaims) decoratePartitionID() {
 	// populate "_partition-id-desc"
 	if p.PartitionID != nil {
 		p.PartitionIDDesc = partitionIDToString(*p.PartitionID)
 	}
 }
 
-// ToJSON returns the (indented) JSON representation of the Claims
-func (p Claims) ToJSON() (string, error) {
+// ToJSON returns the (indented) JSON representation of the PSATokenClaims
+func (p PSATokenClaims) ToJSON() (string, error) {
 	err := p.validate()
 	if err != nil {
 		return "", err
@@ -500,8 +501,8 @@ func (p Claims) ToJSON() (string, error) {
 	return string(buf), nil
 }
 
-// ToCBOR returns the CBOR representation of the Claims
-func (p Claims) ToCBOR() ([]byte, error) {
+// ToCBOR returns the CBOR representation of the PSATokenClaims
+func (p PSATokenClaims) ToCBOR() ([]byte, error) {
 	err := p.validate()
 	if err != nil {
 		return nil, err
@@ -511,8 +512,8 @@ func (p Claims) ToCBOR() ([]byte, error) {
 }
 
 // FromCBOR takes a bytes buffer possibly containing a CBOR serialized PSA
-// token and, if nil is returned, the target Claims is populated.
-func (p *Claims) FromCBOR(buf []byte) error {
+// token and, if nil is returned, the target PSATokenClaims is populated.
+func (p *PSATokenClaims) FromCBOR(buf []byte) error {
 	err := cbor.Unmarshal(buf, p)
 	if err != nil {
 		return err
