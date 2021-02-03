@@ -51,13 +51,13 @@ func signerFromJWK(t *testing.T, j string) *cose.Signer {
 
 // Load JSON test vector without running the PSA token validation logics so
 // that we can pass in bogus data.
-func loadJSONTestVectorFromFile(fn string) (*PSATokenClaims, error) {
+func loadJSONTestVectorFromFile(fn string) (*Claims, error) {
 	buf, err := ioutil.ReadFile(fn)
 	if err != nil {
 		return nil, err
 	}
 
-	p := &PSATokenClaims{}
+	p := &Claims{}
 	err = json.Unmarshal(buf, p)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func loadJSONTestVectorFromFile(fn string) (*PSATokenClaims, error) {
 	return p, nil
 }
 
-func TestPSATokenClaims_validate_positives(t *testing.T) {
+func TestClaims_validate_positives(t *testing.T) {
 	tCases := []string{
 		"testvectors/test-token-valid-full.json",
 		"testvectors/test-token-valid-minimalist.json",
@@ -82,7 +82,7 @@ func TestPSATokenClaims_validate_positives(t *testing.T) {
 	}
 }
 
-func TestPSATokenClaims_validate_negatives(t *testing.T) {
+func TestClaims_validate_negatives(t *testing.T) {
 	type TCase struct {
 		fPath string
 		eStr  string
@@ -220,8 +220,8 @@ func TestPSATokenClaims_validate_negatives(t *testing.T) {
 	}
 }
 
-func TestPSATokenClaims_ToCBOR_ok(t *testing.T) {
-	tv := makePSATokenClaims()
+func TestClaims_ToCBOR_ok(t *testing.T) {
+	tv := makeClaims()
 
 	// AA                                      # map(10)
 	//    3A 000124F7                          # negative(74999)
@@ -315,7 +315,7 @@ func TestPSATokenClaims_ToCBOR_ok(t *testing.T) {
 	assert.Equal(t, expected, actual, "CBOR encoded PSA token match")
 }
 
-func TestPSATokenClaims_FromCBOR_ok(t *testing.T) {
+func TestClaims_FromCBOR_ok(t *testing.T) {
 	tv := []byte{
 		0xaa, 0x3a, 0x00, 0x01, 0x24, 0xf7, 0x71, 0x50, 0x53, 0x41, 0x5f, 0x49,
 		0x4f, 0x54, 0x5f, 0x50, 0x52, 0x4f, 0x46, 0x49, 0x4c, 0x45, 0x5f, 0x31,
@@ -353,17 +353,17 @@ func TestPSATokenClaims_FromCBOR_ok(t *testing.T) {
 		0x69, 0x65, 0x72, 0x2e, 0x6f, 0x72, 0x67,
 	}
 
-	expected := makePSATokenClaims()
+	expected := makeClaims()
 
-	actual := PSATokenClaims{}
+	actual := Claims{}
 	err := actual.FromCBOR(tv)
 
 	assert.Nil(t, err, "conversion from CBOR")
 	assert.Equal(t, expected, actual, "decoded PSA token match")
 }
 
-func TestPSATokenClaims_ToJSON_ok(t *testing.T) {
-	tv := makePSATokenClaims()
+func TestClaims_ToJSON_ok(t *testing.T) {
+	tv := makeClaims()
 
 	expected := `{
   "profile": "PSA_IOT_PROFILE_1",
@@ -397,7 +397,7 @@ func TestPSATokenClaims_ToJSON_ok(t *testing.T) {
 	assert.JSONEq(t, expected, actual, "JSON encoded PSA token does not match")
 }
 
-func TestPSATokenClaims_sign_and_verify(t *testing.T) {
+func TestClaims_sign_and_verify(t *testing.T) {
 	var ECKey = `{
   "kty": "EC",
   "crv": "P-256",
@@ -411,7 +411,7 @@ func TestPSATokenClaims_sign_and_verify(t *testing.T) {
 
 	var PSATokenIn PSAToken
 
-	PSATokenIn.PSATokenClaims = makePSATokenClaims()
+	PSATokenIn.Claims = makeClaims()
 
 	cwt, err := PSATokenIn.Sign(tokenSigner)
 	assert.Nil(t, err, "signing failed")
@@ -425,13 +425,13 @@ func TestPSATokenClaims_sign_and_verify(t *testing.T) {
 	assert.Nil(t, err, "verification failed")
 }
 
-func makePSATokenClaims() PSATokenClaims {
+func makeClaims() Claims {
 	profile := PSA_PROFILE_1
 	partitionID := int32(1)
 	securityLifeCycle := uint16(SECURITY_LIFECYCLE_SECURED_MIN)
 	hwVersion := "1234567890123"
 
-	return PSATokenClaims{
+	return Claims{
 		Profile:               &profile,
 		PartitionID:           &partitionID,
 		PartitionIDDesc:       "spe",

@@ -80,6 +80,8 @@ issues:
         - lll
     - path: psatoken_fuzz_test.go
       linters:
+        # the Fuzz function is only invoked by go-fuzz, therefore golangci will
+        # see it as unused
         - unused
 
 # golangci.com configuration
