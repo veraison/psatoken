@@ -32,7 +32,7 @@ func Fuzz(data []byte) int {
 
 // Invoke "make crashers" to run this test after go-fuzz completes, or even
 // while go-fuzz is running if it's reporting any crasher already.
-func TestPSATokenClaims(t *testing.T) {
+func TestPSATokenClaims_fuzzer_crashers(t *testing.T) {
 	if os.Getenv("TEST_FUZZ_CRASHERS") == "" {
 		t.Skip("Skipping fuzz crashers")
 	}
