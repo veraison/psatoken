@@ -1,9 +1,8 @@
 // Copyright 2021 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
+// Package psatoken provides an implementation of draft-tschofenig-rats-psa-token-05
 package psatoken
-
-// The psatoken package provides an implementation of draft-tschofenig-rats-psa-token-05
 
 import (
 	"crypto"
@@ -35,6 +34,7 @@ type PSASwComponent struct {
 }
 
 // PSATokenClaims is the wrapper around PSA claims
+// nolint: golint
 type PSATokenClaims struct {
 	Profile           *string          `cbor:"-75000,keyasint" json:"profile"`
 	PartitionID       *int32           `cbor:"-75001,keyasint" json:"partition-id"`
@@ -53,7 +53,9 @@ type PSATokenClaims struct {
 	SecurityLifeCycleDesc string `cbor:"-" json:"_security-lifecycle-desc,omitempty"`
 }
 
-// PSAToken is the wrapper around the PSA token, including the COSE envlope and the underlsying claims
+// PSAToken is the wrapper around the PSA token, including the COSE envelope and
+// the underlying claims
+// nolint: golint
 type PSAToken struct {
 	PSATokenClaims
 	message *cose.Sign1Message
@@ -509,7 +511,7 @@ func (p PSATokenClaims) ToCBOR() ([]byte, error) {
 	return cbor.Marshal(&p)
 }
 
-// FromCBOR takes a bytes buffer possibly containing a CBOR serialised PSA
+// FromCBOR takes a bytes buffer possibly containing a CBOR serialized PSA
 // token and, if nil is returned, the target PSATokenClaims is populated.
 func (p *PSATokenClaims) FromCBOR(buf []byte) error {
 	err := cbor.Unmarshal(buf, p)

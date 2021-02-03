@@ -11,7 +11,7 @@ Compliant implementation of [draft-tschofenig-rats-psa-token-05](https://datatra
 
 * `make test` (or just `make`) to run the unit tests;
 * `make coverage` to get code coverage stats;
-* `make lint` to run the code linter (requires [gometalinter](https://github.com/alecthomas/gometalinter); also remember to run `gometalinter --install` to fetch the linting arsenal);
+* `make lint` to run the code linter (requires [golangci-lint](https://golangci-lint.run/usage/install/);
 * (!) `make fuzz` to run the code fuzzer using data from the `corpus` directory (requires [go-fuzz](https://github.com/dvyukov/go-fuzz));
 * `make crashers` to run the crashing test cases once `make fuzz` has completed (or even _while_ it's running if the reported "crashers" is not zero).
 

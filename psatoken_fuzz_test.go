@@ -14,7 +14,6 @@ import (
 )
 
 // Fuzz is invoked by go-fuzz on the corpus
-// nolint: staticcheck
 func Fuzz(data []byte) int {
 	p := PSATokenClaims{}
 
