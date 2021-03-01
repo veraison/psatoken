@@ -15,6 +15,9 @@ CLEANFILES += coverage.out
 .PHONY: lint
 lint: ; @golangci-lint run
 
+.PHONY: lint-extra
+lint-extra: ; @golangci-lint run --issues-exit-code=0 -E dupl -E gocritic -E gosimple -E lll -E prealloc
+
 .PHONY: clean
 clean: ; $(RM) -r $(CLEANFILES)
 
@@ -32,10 +35,11 @@ CLEANFILES += suppressions
 help:
 	@echo "Available targets:"
 	@echo
-	@echo "    test: run the package tests (default)"
-	@echo "coverage: run the package tests and show coverage profile"
-	@echo "    lint: run golangci-lint using configuration from .golangci.yml"
-	@echo "   clean: remove garbage"
-	@echo "    fuzz: run go-fuzz using test vectors from corpus/"
-	@echo "crashers: go through the PDUs that managed to crash the fuzzer"
+	@echo "      test: run the package tests (default)"
+	@echo "  coverage: run the package tests and show coverage profile"
+	@echo "      lint: run golangci-lint using configuration from .golangci.yml"
+	@echo "lint-extra: run golangci-lint using configuration from .golangci.yml"
+	@echo "     clean: remove garbage"
+	@echo "      fuzz: run go-fuzz using test vectors from corpus/"
+	@echo "  crashers: go through the PDUs that managed to crash the fuzzer"
 	@echo
