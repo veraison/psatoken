@@ -4,11 +4,11 @@ export GO111MODULE := on
 export SHELL := /bin/bash
 
 .PHONY: test
-test: ; @go test -v
+test: ; @go test -v ./...
 
 .PHONY: coverage
 coverage:
-	@go test -v -cover -race -coverprofile=coverage.out && \
+	@go test -v -cover -race -coverprofile=coverage.out ./... && \
                 go tool cover -html=coverage.out
 CLEANFILES += coverage.out
 
