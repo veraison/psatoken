@@ -15,7 +15,7 @@ import (
 
 // Fuzz is invoked by go-fuzz on the corpus
 func Fuzz(data []byte) int {
-	p := PSATokenClaims{}
+	p := Claims{}
 
 	err := p.FromCBOR(data)
 	if err != nil {
@@ -32,7 +32,7 @@ func Fuzz(data []byte) int {
 
 // Invoke "make crashers" to run this test after go-fuzz completes, or even
 // while go-fuzz is running if it's reporting any crasher already.
-func TestPSATokenClaims_fuzzer_crashers(t *testing.T) {
+func TestClaims_fuzzer_crashers(t *testing.T) {
 	if os.Getenv("TEST_FUZZ_CRASHERS") == "" {
 		t.Skip("Skipping fuzz crashers")
 	}
@@ -59,8 +59,7 @@ WARNING: there is a >0 chance that one or more of the following test cases
 	// Skip files with extension (.output and .quoted) and get the raw
 	// binary data from the "unextended" file.  (This is the go-fuzz
 	// filename convention.)
-	re, err := regexp.Compile(`^([^.]+)$`)
-	require.Nil(t, err, "compiling crashers regex")
+	re := regexp.MustCompile(`^([^.]+)$`)
 
 	for _, f := range files {
 		if f.IsDir() || !re.MatchString(f.Name()) {
@@ -72,7 +71,7 @@ WARNING: there is a >0 chance that one or more of the following test cases
 
 		t.Logf("running crasher %s", f.Name())
 
-		p := PSATokenClaims{}
+		p := Claims{}
 
 		// Ignore error, the go-fuzz promise is the test case will hang
 		// or crash and we can attach a debugger.
