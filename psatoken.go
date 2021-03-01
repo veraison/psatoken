@@ -1,7 +1,7 @@
 // Copyright 2021 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package psatoken provides an implementation of draft-tschofenig-rats-psa-token-05
+// Package psatoken provides an implementation of draft-tschofenig-rats-psa-token-07
 package psatoken
 
 import (
@@ -14,7 +14,7 @@ import (
 	"strconv"
 
 	"github.com/fxamacker/cbor/v2"
-	cose "github.com/thomas-fossati/go-cose"
+	cose "github.com/veraison/go-cose"
 )
 
 const (

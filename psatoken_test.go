@@ -16,7 +16,7 @@ import (
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	cose "github.com/thomas-fossati/go-cose"
+	cose "github.com/veraison/go-cose"
 )
 
 func signerFromJWK(t *testing.T, j string) *cose.Signer {
