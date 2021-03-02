@@ -65,9 +65,7 @@ func Test_clientConfig_loadSigner_key_extraction_error(t *testing.T) {
 	err := afero.WriteFile(cfg.fileSys, cfg.signingKeyFile, []byte(jwk), 0444)
 	require.Nil(t, err)
 
-	expected := fmt.Sprintf(
-		"extracting raw key from set: failed to build public key: invalid curve algorithm bonkers",
-	)
+	expected := "extracting raw key from set: failed to build public key: invalid curve algorithm bonkers"
 
 	_, actual := cfg.loadSigner()
 	assert.EqualError(t, actual, expected)
@@ -95,7 +93,7 @@ func Test_clientConfig_loadSigner_unhandled_ec_curve(t *testing.T) {
 	err := afero.WriteFile(cfg.fileSys, cfg.signingKeyFile, []byte(jwk), 0444)
 	require.Nil(t, err)
 
-	expected := fmt.Sprintf("unhandled elliptic curve")
+	expected := "unhandled elliptic curve"
 
 	_, actual := cfg.loadSigner()
 	assert.EqualError(t, actual, expected)
@@ -122,7 +120,7 @@ func Test_clientConfig_loadSigner_not_a_private_key(t *testing.T) {
 	err := afero.WriteFile(cfg.fileSys, cfg.signingKeyFile, []byte(jwk), 0444)
 	require.Nil(t, err)
 
-	expected := fmt.Sprintf("unknown private key type *ecdsa.PublicKey")
+	expected := "unknown private key type *ecdsa.PublicKey"
 
 	_, actual := cfg.loadSigner()
 	assert.EqualError(t, actual, expected)

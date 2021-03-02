@@ -23,7 +23,7 @@ var (
 	apiURL = flag.String(
 		"url",
 		"http://127.0.0.1:8888/challenge-response/v1/newSession",
-		"URL of the challenge-reponse newSession API endpoint",
+		"URL of the challenge-response newSession API endpoint",
 	)
 	signingKeyFile = flag.String(
 		"key",
@@ -43,22 +43,24 @@ type clientCtx struct {
 	claims *psatoken.Claims
 }
 
-func (ctx clientCtx) BuildEvidence(nonce []byte, accept []string) ([]byte, string, error) {
+func (ctx clientCtx) BuildEvidence(nonce []byte, accept []string) (evidence []byte, ct string, err error) {
 	for _, ct := range accept {
-		if ct == "application/psa-attestation-token" {
-			token := psatoken.PSAToken{
-				Claims: *ctx.claims,
-			}
-
-			token.Claims.Nonce = &nonce
-
-			evidence, err := token.Sign(ctx.signer)
-			if err != nil {
-				return nil, "", fmt.Errorf("token signing failed: %w", err)
-			}
-
-			return evidence, ct, nil
+		if ct != "application/psa-attestation-token" {
+			continue
 		}
+
+		token := psatoken.PSAToken{
+			Claims: *ctx.claims,
+		}
+
+		token.Claims.Nonce = &nonce
+
+		evidence, err := token.Sign(ctx.signer)
+		if err != nil {
+			return nil, "", fmt.Errorf("token signing failed: %w", err)
+		}
+
+		return evidence, ct, nil
 	}
 
 	return nil, "", errors.New("no match on accepted media types")
