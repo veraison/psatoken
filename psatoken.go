@@ -156,6 +156,10 @@ func (p *PSAToken) FromCOSE(cwt []byte) error {
 // Sign returns the PSAToken wrapped in a CWT according to the supplied
 // go-cose Signer.  (For now only COSE-Sign1 is supported.)
 func (p *PSAToken) Sign(signer *cose.Signer) ([]byte, error) {
+	if signer == nil {
+		return nil, errors.New("nil signer")
+	}
+
 	p.message = cose.NewSign1Message()
 
 	var err error

@@ -1,0 +1,36 @@
+{
+  "profile": "PSA_IOT_PROFILE_1",
+  "partition-id": 2,
+  "security-life-cycle": 12288,
+  "implementation-id": "BwYFBAMCAQAPDg0MCwoJCBcWFRQTEhEQHx4dHBsaGRg=",
+  "boot-seed": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+  "hardware-version": "1234567890123",
+  "software-components": [
+    {
+      "measurement-description": "TF-M_SHA256MemPreXIP",
+      "measurement-type": "BL",
+      "measurement-value": "BwYFBAMCAQAPDg0MCwoJCBcWFRQTEhEQHx4dHBsaGRY=",
+      "signer-id": "BwYFBAMCAQAPDg0MCwoJCBcWFRQTEhEQHx4dHBsaGRg=",
+      "version": "3.4.2"
+    },
+    {
+      "measurement-type": "M1",
+      "measurement-value": "BwYFBAMCAQAPDg0MCwoJCBcWFRQTEhEQHx4dHBsaGRc=",
+      "signer-id": "BwYFBAMCAQAPDg0MCwoJCBcWFRQTEhEQHx4dHBsaGRg=",
+      "version": "1.2.0"
+    },
+    {
+      "measurement-type": "M2",
+      "measurement-value": "BwYFBAMCAQAPDg0MCwoJCBcWFRQTEhEQHx4dHBsaGRg=",
+      "signer-id": "BwYFBAMCAQAPDg0MCwoJCBcWFRQTEhEQHx4dHBsaGRg=",
+      "version": "1.2.3"
+    },
+    {
+      "measurement-type": "M3",
+      "measurement-value": "BwYFBAMCAQAPDg0MCwoJCBcWFRQTEhEQHx4dHBsaGRk=",
+      "signer-id": "BwYFBAMCAQAPDg0MCwoJCBcWFRQTEhEQHx4dHBsaGRg=",
+      "version": "1.0.0"
+    }
+  ],
+  "instance-id": "AQcGBQQDAgEADw4NDAsKCQgXFhUUExIREB8eHRwbGhkY"
+}
