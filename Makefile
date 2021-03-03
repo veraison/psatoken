@@ -31,6 +31,9 @@ CLEANFILES += psatoken-fuzz.zip
 CLEANFILES += crashers
 CLEANFILES += suppressions
 
+.PHONY: docker
+docker: ; docker build --pull --rm -f "cmd/client/Dockerfile" -t psatoken-client:latest "cmd/client" 
+
 .PHONY: help
 help:
 	@echo "Available targets:"
@@ -42,4 +45,5 @@ help:
 	@echo "     clean: remove garbage"
 	@echo "      fuzz: run go-fuzz using test vectors from corpus/"
 	@echo "  crashers: go through the PDUs that managed to crash the fuzzer"
+	@echo "    docker: create a docker image of the psatoken-client CLI"
 	@echo
