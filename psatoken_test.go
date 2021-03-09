@@ -409,14 +409,14 @@ func TestClaims_sign_and_verify(t *testing.T) {
 }`
 	tokenSigner := signerFromJWK(t, ECKey)
 
-	var PSATokenIn PSAToken
+	var PSATokenIn Evidence
 
 	PSATokenIn.Claims = makeClaims()
 
 	cwt, err := PSATokenIn.Sign(tokenSigner)
 	assert.Nil(t, err, "signing failed")
 
-	var PSATokenOut PSAToken
+	var PSATokenOut Evidence
 
 	err = PSATokenOut.FromCOSE(cwt)
 	assert.Nil(t, err, "Sign1Message decoding failed")

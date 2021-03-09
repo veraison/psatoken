@@ -53,10 +53,10 @@ type Claims struct {
 	SecurityLifeCycleDesc string `cbor:"-" json:"_security-lifecycle-desc,omitempty"`
 }
 
-// PSAToken is the wrapper around the PSA token, including the COSE envelope and
+// Evidence is the wrapper around the PSA token, including the COSE envelope and
 // the underlying claims
 // nolint: golint
-type PSAToken struct {
+type Evidence struct {
 	Claims
 	message *cose.Sign1Message
 }
@@ -128,9 +128,9 @@ func securityLifeCycleToString(v uint16) string {
 	return "invalid"
 }
 
-// FromCOSE unwraps a PSATokenClaims from the supplied CWT (For now only
+// FromCOSE unwraps a Claims from the supplied CWT (For now only
 // COSE-Sign1 wrapping is supported.)
-func (p *PSAToken) FromCOSE(cwt []byte) error {
+func (p *Evidence) FromCOSE(cwt []byte) error {
 	if !cose.IsSign1Message(cwt) {
 		return errors.New("not a COSE-Sign1 message")
 	}
@@ -153,9 +153,9 @@ func (p *PSAToken) FromCOSE(cwt []byte) error {
 	return nil
 }
 
-// Sign returns the PSAToken wrapped in a CWT according to the supplied
+// Sign returns the Evidence wrapped in a CWT according to the supplied
 // go-cose Signer.  (For now only COSE-Sign1 is supported.)
-func (p *PSAToken) Sign(signer *cose.Signer) ([]byte, error) {
+func (p *Evidence) Sign(signer *cose.Signer) ([]byte, error) {
 	if signer == nil {
 		return nil, errors.New("nil signer")
 	}
@@ -188,8 +188,8 @@ func (p *PSAToken) Sign(signer *cose.Signer) ([]byte, error) {
 	return wrap, nil
 }
 
-// Verify verifies any attached signature for the PSAToken.
-func (p *PSAToken) Verify(pk crypto.PublicKey) error {
+// Verify verifies any attached signature for the Evidence.
+func (p *Evidence) Verify(pk crypto.PublicKey) error {
 	if p.message == nil {
 		return errors.New("token does not appear to be signed")
 	}
@@ -487,7 +487,7 @@ func (p *Claims) decoratePartitionID() {
 	}
 }
 
-// ToJSON returns the (indented) JSON representation of the PSATokenClaims
+// ToJSON returns the (indented) JSON representation of the Claims
 func (p *Claims) ToJSON() (string, error) {
 	err := p.validate()
 	if err != nil {
@@ -505,7 +505,7 @@ func (p *Claims) ToJSON() (string, error) {
 	return string(buf), nil
 }
 
-// ToCBOR returns the CBOR representation of the PSATokenClaims
+// ToCBOR returns the CBOR representation of the Claims
 func (p *Claims) ToCBOR() ([]byte, error) {
 	err := p.validate()
 	if err != nil {
@@ -516,7 +516,7 @@ func (p *Claims) ToCBOR() ([]byte, error) {
 }
 
 // FromCBOR takes a bytes buffer possibly containing a CBOR serialized PSA
-// token and, if nil is returned, the target PSATokenClaims is populated.
+// token and, if nil is returned, the target Claims is populated.
 func (p *Claims) FromCBOR(buf []byte) error {
 	err := cbor.Unmarshal(buf, p)
 	if err != nil {
