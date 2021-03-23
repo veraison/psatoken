@@ -1,9 +1,8 @@
 {
-  "profile": "http://arm.com/psa/2.0.0",
   "partition-id": 1,
   "security-life-cycle": 12288,
   "implementation-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
-  "boot-seed": "AQIDBA==",
+  "boot-seed": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
   "hardware-version": "1234567890123",
   "software-components": [
     {

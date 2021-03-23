@@ -1,5 +1,5 @@
 {
-  "profile": "PSA_IOT_PROFILE_1",
+  "profile": "http://arm.com/psa/2.0.0",
   "partition-id": 1,
   "security-life-cycle": 12288,
   "boot-seed": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",

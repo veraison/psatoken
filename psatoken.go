@@ -1,7 +1,7 @@
 // Copyright 2021 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
-// Package psatoken provides an implementation of draft-tschofenig-rats-psa-token-07
+// Package psatoken provides an implementation of draft-tschofenig-rats-psa-token-08
 package psatoken
 
 import (
@@ -14,14 +14,21 @@ import (
 	"strconv"
 
 	"github.com/fxamacker/cbor/v2"
+	"github.com/veraison/eat"
 	cose "github.com/veraison/go-cose"
 )
 
 const (
-	// PSA_PROFILE_1 is the profile defined in draft-tschofenig-rats-psa-token
-	// which, at the moment, is the only one defined
+	// PSA_PROFILE_1 is the legacy profile defined in
+	// draft-tschofenig-rats-psa-token-07 and earlier
 	// nolint
 	PSA_PROFILE_1 = "PSA_IOT_PROFILE_1"
+
+	// PSA_PROFILE_2 is the new profile in
+	// draft-tschofenig-rats-psa-token-08 and newer
+	// which uses EAT claims where possible
+	// nolint
+	PSA_PROFILE_2 = "http://arm.com/psa/2.0.0"
 )
 
 // SwComponent is the internal representation of a Software Component (section 3.4.1)
@@ -36,7 +43,7 @@ type SwComponent struct {
 // Claims is the wrapper around PSA claims
 // nolint: golint
 type Claims struct {
-	Profile           *string       `cbor:"-75000,keyasint" json:"profile"`
+	Profile           *eat.Profile  `cbor:"18,keyasint" json:"profile"`
 	PartitionID       *int32        `cbor:"-75001,keyasint" json:"partition-id"`
 	SecurityLifeCycle *uint16       `cbor:"-75002,keyasint" json:"security-life-cycle"`
 	ImplID            *[]byte       `cbor:"-75003,keyasint" json:"implementation-id"`
@@ -44,9 +51,14 @@ type Claims struct {
 	HwVersion         *string       `cbor:"-75005,keyasint,omitempty" json:"hardware-version,omitempty"`
 	SwComponents      []SwComponent `cbor:"-75006,keyasint,omitempty" json:"software-components,omitempty"`
 	NoSwMeasurements  uint          `cbor:"-75007,keyasint,omitempty" json:"no-software-measurements,omitempty"`
-	Nonce             *[]byte       `cbor:"-75008,keyasint" json:"nonce"`
-	InstID            *[]byte       `cbor:"-75009,keyasint" json:"instance-id"`
+	Nonce             *eat.Nonces   `cbor:"10,keyasint" json:"nonce"`
+	InstID            *eat.UEID     `cbor:"11,keyasint" json:"instance-id"`
 	VSI               string        `cbor:"-75010,keyasint,omitempty" json:"verification-service-indicator,omitempty"`
+
+	// -07 and earlier
+	LegacyProfile *string `cbor:"-75000,keyasint,omitempty" json:"legacy-profile,omitempty"`
+	LegacyInstID  *[]byte `cbor:"-75009,keyasint,omitempty" json:"legacy-instance-id,omitempty"`
+	LegacyNonce   *[]byte `cbor:"-75008,keyasint,omitempty" json:"legacy-nonce,omitempty"`
 
 	// Decorations (only available to the JSON encoder)
 	PartitionIDDesc       string `cbor:"-" json:"_partition-id-desc,omitempty"`
@@ -266,11 +278,20 @@ func (p *Claims) validate() error {
 func (p *Claims) validateProfile() error {
 	v := p.Profile
 
-	if v != nil && *v != PSA_PROFILE_1 {
-		return fmt.Errorf(
-			"unknown profile '%s' (MUST be '%s')",
-			*v, PSA_PROFILE_1,
-		)
+	if v != nil {
+		profile, err := v.Get()
+		if err != nil {
+			return fmt.Errorf("error extracting profile: %w", err)
+		}
+
+		if profile != PSA_PROFILE_2 {
+			return fmt.Errorf(
+				"unknown profile '%s' (MUST be '%s')",
+				profile, PSA_PROFILE_2,
+			)
+		}
+	} else {
+		return fmt.Errorf("profile claim missing")
 	}
 
 	return nil
@@ -384,7 +405,9 @@ func (p *Claims) validateNonce() error {
 		return fmt.Errorf("missing mandatory nonce")
 	}
 
-	if err := isPSAHashType(*p.Nonce); err != nil {
+	nonce := ([]eat.Nonce)(*p.Nonce)[0]
+
+	if err := isPSAHashType(nonce.Get()); err != nil {
 		return fmt.Errorf("invalid nonce %s", err.Error())
 	}
 

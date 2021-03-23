@@ -1,6 +1,6 @@
 # Features
 
-Compliant implementation of [draft-tschofenig-rats-psa-token-05](https://datatracker.ietf.org/doc/html/draft-tschofenig-rats-psa-token-05) with the following features:
+Compliant implementation of [draft-tschofenig-rats-psa-token-08](https://datatracker.ietf.org/doc/html/draft-tschofenig-rats-psa-token-08) with the following features:
 
 * sign / verify (CWT using COSE Sign1)
 * CBOR encoder / decoder
