@@ -228,7 +228,7 @@ func TestClaims_validate_negatives(t *testing.T) {
 }
 
 func TestClaims_ToCBOR_ok(t *testing.T) {
-	tv := makeClaims()
+	tv := makeClaims(t)
 
 	expected := []byte{
 		0xaa, 0x12, 0x78, 0x18, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f,
@@ -320,7 +320,7 @@ func TestClaims_FromCBOR_ok(t *testing.T) {
 		0x01, 0x24, 0xf7, 0xf6, 0x3a, 0x00, 0x01, 0x24, 0xff, 0xf6,
 	}
 
-	expected := makeClaims()
+	expected := makeClaims(t)
 
 	actual := Claims{}
 	err := actual.FromCBOR(tv)
@@ -330,7 +330,7 @@ func TestClaims_FromCBOR_ok(t *testing.T) {
 }
 
 func TestClaims_ToJSON_ok(t *testing.T) {
-	tv := makeClaims()
+	tv := makeClaims(t)
 
 	expected := `{
   "profile": "http://arm.com/psa/2.0.0",
@@ -378,7 +378,7 @@ func TestClaims_sign_and_verify(t *testing.T) {
 
 	var PSATokenIn Evidence
 
-	PSATokenIn.Claims = makeClaims()
+	PSATokenIn.Claims = makeClaims(t)
 
 	cwt, err := PSATokenIn.Sign(tokenSigner)
 	assert.Nil(t, err, "signing failed")
@@ -392,12 +392,11 @@ func TestClaims_sign_and_verify(t *testing.T) {
 	assert.Nil(t, err, "verification failed")
 }
 
-func makeClaims() Claims {
-	profile, _ := eat.NewProfile(PSA_PROFILE_2)
-	partitionID := int32(1)
-	securityLifeCycle := uint16(SECURITY_LIFECYCLE_SECURED_MIN)
-	hwVersion := "1234567890123"
-	nonce, _ := eat.NewNonce(
+func makeClaims(t *testing.T) Claims {
+	profile, err := eat.NewProfile(PSA_PROFILE_2)
+	require.Nil(t, err)
+
+	nonce, err := eat.NewNonce(
 		[]byte{
 			0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
 			0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
@@ -405,6 +404,11 @@ func makeClaims() Claims {
 			0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
 		},
 	)
+	require.Nil(t, err)
+
+	partitionID := int32(1)
+	securityLifeCycle := uint16(SECURITY_LIFECYCLE_SECURED_MIN)
+	hwVersion := "1234567890123"
 
 	return Claims{
 		Profile:               profile,
