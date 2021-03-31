@@ -79,7 +79,7 @@ func TestClaims_validate_positives(t *testing.T) {
 		p, err := loadJSONTestVectorFromFile(fPath)
 		require.Nil(t, err, "unable to load %s: %v", fPath, err)
 
-		err = p.validate()
+		err = p.validate(PSA_PROFILE_2)
 		assert.Nil(t, err, "failed TCase at index %d (%s)", i, fPath)
 	}
 }
@@ -94,7 +94,7 @@ func TestClaims_validate_negatives(t *testing.T) {
 		// 0
 		{
 			fPath: "testvectors/test-profile-invalid-unknown.json",
-			eStr:  "unknown profile 'http://UNKNOWN' (MUST be 'http://arm.com/psa/2.0.0')",
+			eStr:  "got profile 'http://UNKNOWN' want 'http://arm.com/psa/2.0.0'",
 		},
 		// 1
 		{
@@ -222,7 +222,7 @@ func TestClaims_validate_negatives(t *testing.T) {
 		p, err := loadJSONTestVectorFromFile(tc.fPath)
 		require.Nil(t, err, "unable to load %s: %v", tc.fPath, err)
 
-		err = p.validate()
+		err = p.validate(PSA_PROFILE_2)
 		assert.EqualError(t, err, tc.eStr, "failed TCase at index %d (%s)", i, tc.fPath)
 	}
 }
@@ -385,11 +385,18 @@ func TestClaims_sign_and_verify(t *testing.T) {
 
 	var PSATokenOut Evidence
 
-	err = PSATokenOut.FromCOSE(cwt)
+	err = PSATokenOut.FromCOSE(cwt, PSA_PROFILE_2)
 	assert.Nil(t, err, "Sign1Message decoding failed")
 
 	err = PSATokenOut.Verify(tokenSigner.Verifier().PublicKey)
 	assert.Nil(t, err, "verification failed")
+}
+
+func TestEvidence_SetClaims_unknown_profile(t *testing.T) {
+	evidence := Evidence{}
+	err := evidence.SetClaims(Claims{}, "X")
+
+	assert.EqualError(t, err, "unknown profile: X")
 }
 
 func makeClaims(t *testing.T) Claims {
