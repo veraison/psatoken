@@ -4,52 +4,33 @@
 package psatoken
 
 import (
-	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	_ "crypto/sha256"
 	"encoding/json"
 	"io/ioutil"
 	"log"
-	"reflect"
 	"testing"
 
-	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/veraison/eat"
-	cose "github.com/veraison/go-cose"
 )
 
-func signerFromJWK(t *testing.T, j string) *cose.Signer {
-	ks, err := jwk.ParseString(j)
-	require.Nil(t, err)
-
-	var key crypto.PrivateKey
-
-	err = ks.Keys[0].Raw(&key)
-	require.Nil(t, err)
-
-	var crv elliptic.Curve
-	var alg *cose.Algorithm
-
-	switch v := key.(type) {
-	case *ecdsa.PrivateKey:
-		crv = v.Curve
-		if crv == elliptic.P256() {
-			alg = cose.ES256
-			break
-		}
-		require.True(t, false, "unknown elliptic curve %v", crv)
-	default:
-		require.True(t, false, "unknown private key type %v", reflect.TypeOf(key))
+var (
+	testInstID = &eat.UEID{
+		0x01,
+		0xa0, 0xa1, 0xa2, 0xa3, 0xa0, 0xa1, 0xa2, 0xa3,
+		0xa0, 0xa1, 0xa2, 0xa3, 0xa0, 0xa1, 0xa2, 0xa3,
+		0xa0, 0xa1, 0xa2, 0xa3, 0xa0, 0xa1, 0xa2, 0xa3,
+		0xa0, 0xa1, 0xa2, 0xa3, 0xa0, 0xa1, 0xa2, 0xa3,
 	}
 
-	s, err := cose.NewSignerFromKey(alg, key)
-	require.Nil(t, err)
-
-	return s
-}
+	testNonce = []byte{
+		0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
+		0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
+		0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
+		0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
+	}
+)
 
 // Load JSON test vector without running the PSA token validation logics so
 // that we can pass in bogus data.
@@ -364,39 +345,57 @@ func TestClaims_ToJSON_ok(t *testing.T) {
 	assert.JSONEq(t, expected, actual, "JSON encoded PSA token does not match")
 }
 
-func TestClaims_sign_and_verify(t *testing.T) {
-	var ECKey = `{
-  "kty": "EC",
-  "crv": "P-256",
-  "x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
-  "y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
-  "d": "870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE",
-  "use": "enc",
-  "kid": "1"
-}`
-	tokenSigner := signerFromJWK(t, ECKey)
+func TestClaims_getProfile_no_profile(t *testing.T) {
+	tv := Claims{}
 
-	var PSATokenIn Evidence
-
-	PSATokenIn.Claims = makeClaims(t)
-
-	cwt, err := PSATokenIn.Sign(tokenSigner)
-	assert.Nil(t, err, "signing failed")
-
-	var PSATokenOut Evidence
-
-	err = PSATokenOut.FromCOSE(cwt, PSA_PROFILE_2)
-	assert.Nil(t, err, "Sign1Message decoding failed")
-
-	err = PSATokenOut.Verify(tokenSigner.Verifier().PublicKey)
-	assert.Nil(t, err, "verification failed")
+	_, err := tv.getProfile()
+	assert.EqualError(t, err, "no profile set")
 }
 
-func TestEvidence_SetClaims_unknown_profile(t *testing.T) {
-	evidence := Evidence{}
-	err := evidence.SetClaims(Claims{}, "X")
+func TestClaims_getProfile_confusing_profile_settings(t *testing.T) {
+	newProfile, err := eat.NewProfile(PSA_PROFILE_2)
+	require.Nil(t, err)
 
-	assert.EqualError(t, err, "unknown profile: X")
+	oldProfile := PSA_PROFILE_1
+
+	tv := Claims{
+		Profile:       newProfile,
+		LegacyProfile: &oldProfile,
+	}
+
+	_, err = tv.getProfile()
+	assert.EqualError(t, err, "both legacy and new profile claims are set")
+}
+
+func TestClaims_getProfile_legacy_ok(t *testing.T) {
+	oldProfile := PSA_PROFILE_1
+
+	tv := Claims{
+		LegacyProfile: &oldProfile,
+	}
+
+	expected := PSA_PROFILE_1
+
+	actual, err := tv.getProfile()
+
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual)
+}
+
+func TestClaims_getProfile_profile2_ok(t *testing.T) {
+	newProfile, err := eat.NewProfile(PSA_PROFILE_2)
+	require.Nil(t, err)
+
+	tv := Claims{
+		Profile: newProfile,
+	}
+
+	expected := PSA_PROFILE_2
+
+	actual, err := tv.getProfile()
+
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual)
 }
 
 func makeClaims(t *testing.T) Claims {
@@ -404,14 +403,7 @@ func makeClaims(t *testing.T) Claims {
 	require.Nil(t, err)
 
 	nonce := eat.Nonce{}
-	err = nonce.Add(
-		[]byte{
-			0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
-			0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
-			0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
-			0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
-		},
-	)
+	err = nonce.Add(testNonce)
 	require.Nil(t, err)
 
 	partitionID := int32(1)
@@ -469,14 +461,8 @@ func makeClaims(t *testing.T) Claims {
 				},
 			},
 		},
-		Nonce: &nonce,
-		InstID: &eat.UEID{
-			0x01,
-			0xa0, 0xa1, 0xa2, 0xa3, 0xa0, 0xa1, 0xa2, 0xa3,
-			0xa0, 0xa1, 0xa2, 0xa3, 0xa0, 0xa1, 0xa2, 0xa3,
-			0xa0, 0xa1, 0xa2, 0xa3, 0xa0, 0xa1, 0xa2, 0xa3,
-			0xa0, 0xa1, 0xa2, 0xa3, 0xa0, 0xa1, 0xa2, 0xa3,
-		},
-		VSI: "https://psa-verifier.org",
+		Nonce:  &nonce,
+		InstID: testInstID,
+		VSI:    "https://psa-verifier.org",
 	}
 }

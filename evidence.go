@@ -21,78 +21,89 @@ type Evidence struct {
 	message *cose.Sign1Message
 }
 
-func (p *Evidence) SetClaims(claims Claims, profile string) error {
-	if err := checkProfiles(profile); err != nil {
+// SetClaims attaches the supplied claims to the Evidence instance. The claims
+// are checked for consistency with the given profile.
+func (e *Evidence) SetClaims(claims *Claims, profile string) error {
+	if err := checkSupportedProfiles(profile); err != nil {
 		return err
 	}
 
-	err := p.Claims.validate(profile)
+	err := claims.validate(profile)
 	if err != nil {
-		return err
+		return fmt.Errorf("validation failed: %w", err)
 	}
 
-	p.Claims = claims
+	e.Claims = *claims
 
 	return nil
 }
 
+// GetInstanceID returns the InstanceID claim that is to be used to locate the
+// verification key or a nil pointer if no suitable InstanceID could be located.
+// A call to this function on Evidence that has not been successfully verified
+// is meaningless.
+func (e *Evidence) GetInstanceID() *[]byte {
+	instID, err := e.Claims.GetInstanceID()
+	if err != nil {
+		return nil
+	}
+	return instID
+}
+
 // FromCOSE extracts the PSA claims wrapped in the supplied CWT. As per spec,
 // the only acceptable security envelope is COSE-Sign1.
-func (p *Evidence) FromCOSE(cwt []byte, supportedProfiles ...string) error {
-	if err := checkProfiles(supportedProfiles...); err != nil {
-		return fmt.Errorf(
-			"PSA claims cannot be interpreted without specifying which PSA profile is supported: %w",
-			err,
-		)
+func (e *Evidence) FromCOSE(cwt []byte, supportedProfiles ...string) error {
+	err := checkSupportedProfiles(supportedProfiles...)
+	if err != nil {
+		return err
 	}
 
 	if !cose.IsSign1Message(cwt) {
-		return errors.New("not a COSE-Sign1 message")
+		return errors.New("the supplied CWT is not a COSE-Sign1 message")
 	}
 
-	p.message = cose.NewSign1Message()
+	e.message = cose.NewSign1Message()
 
-	err := p.message.UnmarshalCBOR(cwt)
+	err = e.message.UnmarshalCBOR(cwt)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed CBOR decoding for CWT: %w", err)
 	}
 
-	// To verify the CWT we need to locate the verification key
-	// which is identified by the InstanceID claim inside the PSA
-	// token.
-	err = p.Claims.FromCBOR(p.message.Payload)
+	err = e.Claims.FromCBOR(e.message.Payload)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed CBOR decoding of PSA claims: %w", err)
 	}
 
-	err = errors.New("no profile")
+	// We can assume that the prunedProfile array has at least one element:
+	// the condition has been checked at the top of the function by the call
+	// to checkSupportedProfiles
 	for _, profile := range supportedProfiles {
-		err = p.Claims.validate(profile)
+		err = e.Claims.validate(profile)
 		if err == nil {
 			break
 		}
 	}
 
 	if err != nil {
-		return err
+		return fmt.Errorf("claims validation failed: %w", err)
 	}
 
-	p.Claims.decorate()
+	e.Claims.decorate()
 
 	return nil
 }
 
 // Sign returns the Evidence wrapped in a CWT according to the supplied
 // go-cose Signer.  (For now only COSE-Sign1 is supported.)
-func (p *Evidence) Sign(signer *cose.Signer) ([]byte, error) {
+func (e *Evidence) Sign(signer *cose.Signer) ([]byte, error) {
 	if signer == nil {
 		return nil, errors.New("nil signer")
 	}
 
-	p.message = cose.NewSign1Message()
+	e.message = cose.NewSign1Message()
 
 	var err error
-	p.message.Payload, err = p.Claims.ToCBOR()
+	e.message.Payload, err = e.Claims.ToCBOR()
 	if err != nil {
 		return nil, err
 	}
@@ -102,14 +113,14 @@ func (p *Evidence) Sign(signer *cose.Signer) ([]byte, error) {
 		return nil, errors.New("signer has no algorithm")
 	}
 
-	p.message.Headers.Protected[1] = alg.Value
+	e.message.Headers.Protected[1] = alg.Value
 
-	err = p.message.Sign(rand.Reader, []byte(""), *signer)
+	err = e.message.Sign(rand.Reader, []byte(""), *signer)
 	if err != nil {
 		return nil, err
 	}
 
-	wrap, err := cose.Marshal(p.message)
+	wrap, err := cose.Marshal(e.message)
 	if err != nil {
 		return nil, err
 	}
@@ -118,14 +129,14 @@ func (p *Evidence) Sign(signer *cose.Signer) ([]byte, error) {
 }
 
 // Verify verifies any attached signature for the Evidence.
-func (p *Evidence) Verify(pk crypto.PublicKey) error {
-	if p.message == nil {
-		return errors.New("token does not appear to be signed")
+func (e *Evidence) Verify(pk crypto.PublicKey) error {
+	if e.message == nil {
+		return errors.New("no Sign1 message found")
 	}
 
-	alg, err := cose.GetAlg(p.message.Headers)
+	alg, err := cose.GetAlg(e.message.Headers)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to get verification algorithm: %w", err)
 	}
 
 	verifier := cose.Verifier{
@@ -133,7 +144,7 @@ func (p *Evidence) Verify(pk crypto.PublicKey) error {
 		PublicKey: pk,
 	}
 
-	err = p.message.Verify([]byte(""), verifier)
+	err = e.message.Verify([]byte(""), verifier)
 	if err != nil {
 		return err
 	}

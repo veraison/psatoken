@@ -9,8 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
-	"github.com/fxamacker/cbor/v2"
 	"github.com/veraison/eat"
 )
 
@@ -27,15 +27,29 @@ const (
 	PSA_PROFILE_2 = "http://arm.com/psa/2.0.0"
 )
 
-func checkProfiles(profiles ...string) error {
-	if len(profiles) == 0 {
-		return errors.New("no profile supplied")
-	}
+func pruneProfiles(profiles ...string) []string {
+	var prunedProfiles []string
 
 	for _, profile := range profiles {
-		if profile != PSA_PROFILE_1 && profile != PSA_PROFILE_2 {
-			return fmt.Errorf("unknown profile: %s", profile)
+		if profile == PSA_PROFILE_1 || profile == PSA_PROFILE_2 {
+			prunedProfiles = append(prunedProfiles, profile)
 		}
+	}
+
+	return prunedProfiles
+}
+
+func checkSupportedProfiles(profiles ...string) error {
+	if len(profiles) == 0 {
+		return fmt.Errorf("no profile supplied")
+	}
+
+	prunedProfiles := pruneProfiles(profiles...)
+	if len(prunedProfiles) == 0 {
+		return fmt.Errorf(
+			"none of the requested profiles (%s) is currently supported",
+			strings.Join(profiles, ", "),
+		)
 	}
 
 	return nil
@@ -154,8 +168,8 @@ type Claims struct {
 	SecurityLifeCycleDesc string `cbor:"-" json:"_security-lifecycle-desc,omitempty"`
 }
 
-func (p *Claims) validatePartitionID() error {
-	if p.PartitionID == nil {
+func (c *Claims) validatePartitionID() error {
+	if c.PartitionID == nil {
 		return fmt.Errorf("missing mandatory partition-id")
 	}
 
@@ -163,8 +177,8 @@ func (p *Claims) validatePartitionID() error {
 	return nil
 }
 
-func (p *Claims) validateSecurityLifeCycle() error {
-	v := p.SecurityLifeCycle
+func (c *Claims) validateSecurityLifeCycle() error {
+	v := c.SecurityLifeCycle
 
 	if v == nil {
 		return fmt.Errorf("missing mandatory security-life-cycle")
@@ -184,12 +198,12 @@ func (p *Claims) validateSecurityLifeCycle() error {
 	)
 }
 
-func (p *Claims) validateImplID() error {
-	if p.ImplID == nil {
+func (c *Claims) validateImplID() error {
+	if c.ImplID == nil {
 		return fmt.Errorf("missing mandatory implementation-id")
 	}
 
-	l := len(*p.ImplID)
+	l := len(*c.ImplID)
 
 	if l != 32 {
 		return fmt.Errorf(
@@ -201,19 +215,50 @@ func (p *Claims) validateImplID() error {
 	return nil
 }
 
-func (p *Claims) instIDByProfile(profile string) *[]byte {
+func (c *Claims) instIDByProfile(profile string) *[]byte {
 	switch profile {
 	case PSA_PROFILE_1:
-		return p.LegacyInstID
+		return c.LegacyInstID
 	case PSA_PROFILE_2:
-		return (*[]byte)(p.InstID)
+		return (*[]byte)(c.InstID)
 	default:
 		return nil
 	}
 }
 
-func (p *Claims) validateInstID(expectedProfile string) error {
-	instID := p.instIDByProfile(expectedProfile)
+func (c Claims) GetInstanceID() (*[]byte, error) {
+	profile, err := c.getProfile()
+	if err != nil {
+		return nil, err
+	}
+
+	instID := c.instIDByProfile(profile)
+
+	return instID, nil
+}
+
+func (c Claims) getProfile() (string, error) {
+	if c.Profile == nil && c.LegacyProfile == nil {
+		return "", errors.New("no profile set")
+	}
+
+	if c.Profile != nil && c.LegacyProfile != nil {
+		return "", errors.New("both legacy and new profile claims are set")
+	}
+
+	if c.Profile != nil {
+		profile, err := c.Profile.Get()
+		if err != nil {
+			return "", fmt.Errorf("error retreiving profile: %w", err)
+		}
+		return profile, nil
+	}
+
+	return *c.LegacyProfile, nil
+}
+
+func (c *Claims) validateInstID(expectedProfile string) error {
+	instID := c.instIDByProfile(expectedProfile)
 
 	if instID == nil {
 		return fmt.Errorf("missing mandatory instance-id")
@@ -237,12 +282,12 @@ func (p *Claims) validateInstID(expectedProfile string) error {
 	return nil
 }
 
-func (p *Claims) validateBootSeed() error {
-	if p.BootSeed == nil {
+func (c *Claims) validateBootSeed() error {
+	if c.BootSeed == nil {
 		return fmt.Errorf("missing mandatory boot-seed")
 	}
 
-	l := len(*p.BootSeed)
+	l := len(*c.BootSeed)
 
 	if l != 32 {
 		return fmt.Errorf(
@@ -254,12 +299,12 @@ func (p *Claims) validateBootSeed() error {
 	return nil
 }
 
-func (p *Claims) validateHwVersion() error {
-	if p.HwVersion == nil {
+func (c *Claims) validateHwVersion() error {
+	if c.HwVersion == nil {
 		return nil
 	}
 
-	v := *p.HwVersion
+	v := *c.HwVersion
 
 	_, err := strconv.ParseUint(v, 10, 64)
 
@@ -270,45 +315,46 @@ func (p *Claims) validateHwVersion() error {
 	return nil
 }
 
-func (p *Claims) validateNonce(expectedProfile string) error {
+func (c *Claims) validateNonce(expectedProfile string) error {
+	var nonce []byte
 	switch expectedProfile {
 	case PSA_PROFILE_1:
-		if p.LegacyNonce == nil {
+		if c.LegacyNonce == nil {
 			return fmt.Errorf("missing mandatory nonce")
 		}
-		if err := isPSAHashType(*p.LegacyNonce); err != nil {
-			return fmt.Errorf("invalid nonce: %w", err)
-		}
-		return nil
+		nonce = *c.LegacyNonce
 	case PSA_PROFILE_2:
-		if p.Nonce == nil {
+		if c.Nonce == nil {
 			return fmt.Errorf("missing mandatory nonce")
 		}
-		if p.Nonce.Len() != 1 {
+		if c.Nonce.Len() != 1 {
 			return errors.New("there must be exactly one nonce")
 		}
-		if err := isPSAHashType(p.Nonce.GetI(0)); err != nil {
-			return fmt.Errorf("invalid nonce: %w", err)
-		}
-		return nil
+		nonce = c.Nonce.GetI(0)
 	default:
 		return fmt.Errorf("unknown profile: %s", expectedProfile)
 	}
+
+	if err := isPSAHashType(nonce); err != nil {
+		return fmt.Errorf("invalid nonce: %w", err)
+	}
+
+	return nil
 }
 
-func (p *Claims) validateSwComponents() error {
-	if p.NoSwMeasurements == 1 {
-		if len(p.SwComponents) != 0 {
+func (c *Claims) validateSwComponents() error {
+	if c.NoSwMeasurements == 1 {
+		if len(c.SwComponents) != 0 {
 			return fmt.Errorf("no-software-measurements and software-components are mutually exclusive")
 		}
 		return nil
 	}
 
-	if len(p.SwComponents) == 0 {
+	if len(c.SwComponents) == 0 {
 		return fmt.Errorf("no software-components found")
 	}
 
-	for i, c := range p.SwComponents {
+	for i, c := range c.SwComponents {
 		err := c.validate(i)
 		if err != nil {
 			return err
@@ -320,38 +366,31 @@ func (p *Claims) validateSwComponents() error {
 
 // decorate does type enrichment on the token, to add "hidden" attributes
 // that will only be visible in the JSON (internal) encoding.
-func (p *Claims) decorate() {
-	p.decorateSecurityLifeCycle()
-	p.decoratePartitionID()
+func (c *Claims) decorate() {
+	c.decorateSecurityLifeCycle()
+	c.decoratePartitionID()
 }
 
-func (p *Claims) decorateSecurityLifeCycle() {
+func (c *Claims) decorateSecurityLifeCycle() {
 	// populate "_security-lifecycle-desc"
-	if p.SecurityLifeCycle != nil {
-		p.SecurityLifeCycleDesc = securityLifeCycleToString(*p.SecurityLifeCycle)
+	if c.SecurityLifeCycle != nil {
+		c.SecurityLifeCycleDesc = securityLifeCycleToString(*c.SecurityLifeCycle)
 	}
 }
 
-func (p *Claims) decoratePartitionID() {
+func (c *Claims) decoratePartitionID() {
 	// populate "_partition-id-desc"
-	if p.PartitionID != nil {
-		p.PartitionIDDesc = partitionIDToString(*p.PartitionID)
+	if c.PartitionID != nil {
+		c.PartitionIDDesc = partitionIDToString(*c.PartitionID)
 	}
 }
 
 // ToJSON returns the (indented) JSON representation of the Claims
-func (p *Claims) ToJSON() (string, error) {
-	/* TODO(tho)
-	err := p.validate()
-	if err != nil {
-		return "", err
-	}
-	*/
-
+func (c *Claims) ToJSON() (string, error) {
 	// add any available type enrichment
-	p.decorate()
+	c.decorate()
 
-	buf, err := json.MarshalIndent(&p, "", "  ")
+	buf, err := json.MarshalIndent(&c, "", "  ")
 	if err != nil {
 		return "", err
 	}
@@ -360,68 +399,67 @@ func (p *Claims) ToJSON() (string, error) {
 }
 
 // ToCBOR returns the CBOR representation of the Claims
-func (p *Claims) ToCBOR() ([]byte, error) {
+func (c *Claims) ToCBOR() ([]byte, error) {
 	/* No validation required here: in the emitter workflow, the PSA claims
 	 * have been validated when they got attached to the Evidence via SetClaims */
-	return cbor.Marshal(&p)
-	// TODO(tho) configure the CBOR codec according to spec
+	return em.Marshal(&c)
 }
 
 // FromCBOR takes a bytes buffer containing a PSA token and, if successful,
 // populates the receiver Claims object.
-func (p *Claims) FromCBOR(buf []byte) error {
-	err := cbor.Unmarshal(buf, p)
+func (c *Claims) FromCBOR(buf []byte) error {
+	err := dm.Unmarshal(buf, c)
 	if err != nil {
 		return err
 	}
 
-	p.decorate()
+	c.decorate()
 
 	return nil
 }
 
-func (p *Claims) validate(profile string) error {
-	err := p.validateProfile(profile)
+func (c *Claims) validate(profile string) error {
+	err := c.validateProfile(profile)
 	if err != nil {
 		return err
 	}
 
-	err = p.validatePartitionID()
+	err = c.validatePartitionID()
 	if err != nil {
 		return err
 	}
 
-	err = p.validateSecurityLifeCycle()
+	err = c.validateSecurityLifeCycle()
 	if err != nil {
 		return err
 	}
 
-	err = p.validateImplID()
+	err = c.validateImplID()
 	if err != nil {
 		return err
 	}
 
-	err = p.validateBootSeed()
+	err = c.validateBootSeed()
 	if err != nil {
 		return err
 	}
 
-	err = p.validateHwVersion()
+	err = c.validateHwVersion()
 	if err != nil {
 		return err
 	}
 
-	err = p.validateSwComponents()
+	err = c.validateSwComponents()
 	if err != nil {
 		return err
 	}
 
-	err = p.validateNonce(profile)
+	err = c.validateNonce(profile)
 	if err != nil {
 		return err
 	}
 
-	err = p.validateInstID(profile)
+	err = c.validateInstID(profile)
 	if err != nil {
 		return err
 	}
@@ -431,23 +469,33 @@ func (p *Claims) validate(profile string) error {
 	return nil
 }
 
-func (p *Claims) validateProfile(expectedProfile string) error {
-	v := p.Profile
+func (c *Claims) validateProfile(expectedProfile string) error {
+	var err error
+	var profileClaim string
 
-	if v != nil {
-		profile, err := v.Get()
+	switch expectedProfile {
+	case PSA_PROFILE_1:
+		if c.LegacyProfile == nil {
+			return fmt.Errorf("profile claim missing")
+		}
+		profileClaim = *c.LegacyProfile
+	case PSA_PROFILE_2:
+		if c.Profile == nil {
+			return fmt.Errorf("profile claim missing")
+		}
+		profileClaim, err = c.Profile.Get()
 		if err != nil {
 			return fmt.Errorf("error extracting profile: %w", err)
 		}
+	default:
+		return fmt.Errorf("unknown profile: %s", expectedProfile)
+	}
 
-		if profile != expectedProfile {
-			return fmt.Errorf(
-				"got profile '%s' want '%s'",
-				profile, expectedProfile,
-			)
-		}
-	} else {
-		return fmt.Errorf("profile claim missing")
+	if profileClaim != expectedProfile {
+		return fmt.Errorf(
+			"got profile '%s' want '%s'",
+			profileClaim, expectedProfile,
+		)
 	}
 
 	return nil
@@ -462,29 +510,29 @@ type SwComponent struct {
 	MeasurementDesc  string  `cbor:"6,keyasint,omitempty" json:"measurement-description,omitempty"`
 }
 
-func (p SwComponent) validate(idx int) error {
-	if p.MeasurementValue == nil {
+func (c SwComponent) validate(idx int) error {
+	if c.MeasurementValue == nil {
 		return fmt.Errorf(
 			"invalid software-component[%d]: missing mandatory measurement-value",
 			idx,
 		)
 	}
 
-	if err := isPSAHashType(*p.MeasurementValue); err != nil {
+	if err := isPSAHashType(*c.MeasurementValue); err != nil {
 		return fmt.Errorf(
 			"invalid software-component[%d]: invalid measurement-value %s",
 			idx, err.Error(),
 		)
 	}
 
-	if p.SignerID == nil {
+	if c.SignerID == nil {
 		return fmt.Errorf(
 			"invalid software-component[%d]: missing mandatory signer-id",
 			idx,
 		)
 	}
 
-	if err := isPSAHashType(*p.SignerID); err != nil {
+	if err := isPSAHashType(*c.SignerID); err != nil {
 		return fmt.Errorf(
 			"invalid software-component[%d]: invalid signer-id %s",
 			idx, err.Error(),
