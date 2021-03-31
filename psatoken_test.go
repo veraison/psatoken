@@ -154,12 +154,12 @@ func TestClaims_validate_negatives(t *testing.T) {
 		// 12
 		{
 			fPath: "testvectors/test-nonce-invalid-short.json",
-			eStr:  "invalid nonce length 4 (psa-hash-type MUST be 32, 48 or 64 bytes)",
+			eStr:  "invalid nonce: length 4 (psa-hash-type MUST be 32, 48 or 64 bytes)",
 		},
 		// 13
 		{
 			fPath: "testvectors/test-nonce-invalid-long.json",
-			eStr:  "invalid nonce length 65 (psa-hash-type MUST be 32, 48 or 64 bytes)",
+			eStr:  "invalid nonce: length 65 (psa-hash-type MUST be 32, 48 or 64 bytes)",
 		},
 		// 14
 		{
@@ -396,7 +396,8 @@ func makeClaims(t *testing.T) Claims {
 	profile, err := eat.NewProfile(PSA_PROFILE_2)
 	require.Nil(t, err)
 
-	nonce, err := eat.NewNonce(
+	nonce := eat.Nonce{}
+	err = nonce.Add(
 		[]byte{
 			0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
 			0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
@@ -461,7 +462,7 @@ func makeClaims(t *testing.T) Claims {
 				},
 			},
 		},
-		Nonce: &eat.Nonces{*nonce},
+		Nonce: &nonce,
 		InstID: &eat.UEID{
 			0x01,
 			0xa0, 0xa1, 0xa2, 0xa3, 0xa0, 0xa1, 0xa2, 0xa3,

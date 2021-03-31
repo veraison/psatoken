@@ -51,7 +51,7 @@ type Claims struct {
 	HwVersion         *string       `cbor:"-75005,keyasint,omitempty" json:"hardware-version,omitempty"`
 	SwComponents      []SwComponent `cbor:"-75006,keyasint,omitempty" json:"software-components,omitempty"`
 	NoSwMeasurements  uint          `cbor:"-75007,keyasint,omitempty" json:"no-software-measurements,omitempty"`
-	Nonce             *eat.Nonces   `cbor:"10,keyasint" json:"nonce"`
+	Nonce             *eat.Nonce    `cbor:"10,keyasint" json:"nonce"`
 	InstID            *eat.UEID     `cbor:"11,keyasint" json:"instance-id"`
 	VSI               string        `cbor:"-75010,keyasint,omitempty" json:"verification-service-indicator,omitempty"`
 
@@ -405,10 +405,12 @@ func (p *Claims) validateNonce() error {
 		return fmt.Errorf("missing mandatory nonce")
 	}
 
-	nonce := ([]eat.Nonce)(*p.Nonce)[0]
+	if p.Nonce.Len() != 1 {
+		return errors.New("there must be exactly one nonce")
+	}
 
-	if err := isPSAHashType(nonce.Get()); err != nil {
-		return fmt.Errorf("invalid nonce %s", err.Error())
+	if err := isPSAHashType(p.Nonce.GetI(0)); err != nil {
+		return fmt.Errorf("invalid nonce: %w", err)
 	}
 
 	return nil
