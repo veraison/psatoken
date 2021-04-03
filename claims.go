@@ -15,6 +15,11 @@ import (
 )
 
 const (
+	ImplIDLen = 32 // psa-implementation-id size (bytes .size 32)
+	InstIDLen = 33 // psa-instance-id size (bytes .size 33)
+)
+
+const (
 	// PSA_PROFILE_1 is the legacy profile defined in
 	// draft-tschofenig-rats-psa-token-07 and earlier
 	// nolint
@@ -205,10 +210,10 @@ func (c *Claims) validateImplID() error {
 
 	l := len(*c.ImplID)
 
-	if l != 32 {
+	if l != ImplIDLen {
 		return fmt.Errorf(
-			"invalid implementation-id length %d (MUST be 32 bytes)",
-			l,
+			"invalid implementation-id length %d (MUST be %d bytes)",
+			l, ImplIDLen,
 		)
 	}
 
@@ -266,10 +271,10 @@ func (c *Claims) validateInstID(expectedProfile string) error {
 
 	l := len(*instID)
 
-	if l != 33 {
+	if l != InstIDLen {
 		return fmt.Errorf(
-			"invalid instance-id length %d (MUST be 33 bytes)",
-			l,
+			"invalid instance-id length %d (MUST be %d bytes)",
+			l, InstIDLen,
 		)
 	}
 
@@ -354,8 +359,8 @@ func (c *Claims) validateSwComponents() error {
 		return fmt.Errorf("no software-components found")
 	}
 
-	for i, c := range c.SwComponents {
-		err := c.validate(i)
+	for i, sw := range c.SwComponents {
+		err := sw.validate(i)
 		if err != nil {
 			return err
 		}
