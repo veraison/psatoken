@@ -325,12 +325,12 @@ func (c *Claims) validateNonce(expectedProfile string) error {
 	switch expectedProfile {
 	case PSA_PROFILE_1:
 		if c.LegacyNonce == nil {
-			return fmt.Errorf("missing mandatory nonce")
+			return errors.New("missing mandatory nonce")
 		}
 		nonce = *c.LegacyNonce
 	case PSA_PROFILE_2:
 		if c.Nonce == nil {
-			return fmt.Errorf("missing mandatory nonce")
+			return errors.New("missing mandatory nonce")
 		}
 		if c.Nonce.Len() != 1 {
 			return errors.New("there must be exactly one nonce")
