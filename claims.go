@@ -151,7 +151,7 @@ func partitionIDToString(pid int32) string {
 // Claims is the wrapper around PSA claims
 // nolint: golint
 type Claims struct {
-	Profile           *eat.Profile  `cbor:"18,keyasint" json:"profile"`
+	Profile           *eat.Profile  `cbor:"265,keyasint" json:"profile"`
 	PartitionID       *int32        `cbor:"-75001,keyasint" json:"partition-id"`
 	SecurityLifeCycle *uint16       `cbor:"-75002,keyasint" json:"security-life-cycle"`
 	ImplID            *[]byte       `cbor:"-75003,keyasint" json:"implementation-id"`
@@ -160,7 +160,7 @@ type Claims struct {
 	SwComponents      []SwComponent `cbor:"-75006,keyasint,omitempty" json:"software-components,omitempty"`
 	NoSwMeasurements  uint          `cbor:"-75007,keyasint,omitempty" json:"no-software-measurements,omitempty"`
 	Nonce             *eat.Nonce    `cbor:"10,keyasint" json:"nonce"`
-	InstID            *eat.UEID     `cbor:"11,keyasint" json:"instance-id"`
+	InstID            *eat.UEID     `cbor:"256,keyasint" json:"instance-id"`
 	VSI               string        `cbor:"-75010,keyasint,omitempty" json:"verification-service-indicator,omitempty"`
 
 	// -07 and earlier
@@ -481,7 +481,7 @@ func (c *Claims) validateProfile(expectedProfile string) error {
 	switch expectedProfile {
 	case PSA_PROFILE_1:
 		if c.LegacyProfile == nil {
-			return fmt.Errorf("profile claim missing")
+			return fmt.Errorf("legacy profile claim missing")
 		}
 		profileClaim = *c.LegacyProfile
 	case PSA_PROFILE_2:
