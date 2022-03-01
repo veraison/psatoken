@@ -78,15 +78,16 @@ func (e *Evidence) FromCOSE(cwt []byte, supportedProfiles ...string) error {
 	// the condition has been checked at the top of the function by the call
 	// to checkSupportedProfiles
 	for _, profile := range supportedProfiles {
-		e := e.Claims.validate(profile)
-		if e == nil {
+		verr := e.Claims.validate(profile)
+		if verr == nil {
+			err = nil
 			break
 		}
 
 		if err == nil {
-			err = fmt.Errorf("%v", e)
+			err = fmt.Errorf("%v", verr)
 		} else {
-			err = fmt.Errorf("%v + %v", err, e)
+			err = fmt.Errorf("%v + %v", err, verr)
 		}
 	}
 

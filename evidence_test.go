@@ -8,6 +8,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	_ "crypto/sha256"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -66,6 +67,8 @@ func TestEvidence_sign_and_verify(t *testing.T) {
 
 	cwt, err := EvidenceIn.Sign(tokenSigner)
 	assert.Nil(t, err, "signing failed")
+
+	fmt.Printf("PSA evidence: %x\n", cwt)
 
 	var EvidenceOut Evidence
 
