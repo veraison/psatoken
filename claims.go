@@ -242,6 +242,47 @@ func (c Claims) GetInstanceID() (*[]byte, error) {
 	return instID, nil
 }
 
+func (c *Claims) nonceByProfile(profile string) ([]byte, error) {
+	var nonce []byte
+	switch profile {
+	case PSA_PROFILE_1:
+		if c.LegacyNonce == nil {
+			return nil, errors.New("missing mandatory nonce")
+		}
+		nonce = *c.LegacyNonce
+	case PSA_PROFILE_2:
+		if c.Nonce == nil {
+			return nil, errors.New("missing mandatory nonce")
+		}
+		if c.Nonce.Len() != 1 {
+			return nil, errors.New("there must be exactly one nonce")
+		}
+		nonce = c.Nonce.GetI(0)
+	default:
+		return nil, fmt.Errorf("unknown profile: %s", profile)
+	}
+
+	if err := isPSAHashType(nonce); err != nil {
+		return nil, fmt.Errorf("invalid nonce: %w", err)
+	}
+
+	return nonce, nil
+}
+
+func (c Claims) GetNonce() ([]byte, error) {
+	profile, err := c.getProfile()
+	if err != nil {
+		return nil, err
+	}
+
+	nonce, err := c.nonceByProfile(profile)
+	if err != nil {
+		return nil, err
+	}
+
+	return nonce, nil
+}
+
 func (c Claims) getProfile() (string, error) {
 	if c.Profile == nil && c.LegacyProfile == nil {
 		return "", errors.New("no profile set")
@@ -321,30 +362,8 @@ func (c *Claims) validateHwVersion() error {
 }
 
 func (c *Claims) validateNonce(expectedProfile string) error {
-	var nonce []byte
-	switch expectedProfile {
-	case PSA_PROFILE_1:
-		if c.LegacyNonce == nil {
-			return errors.New("missing mandatory nonce")
-		}
-		nonce = *c.LegacyNonce
-	case PSA_PROFILE_2:
-		if c.Nonce == nil {
-			return errors.New("missing mandatory nonce")
-		}
-		if c.Nonce.Len() != 1 {
-			return errors.New("there must be exactly one nonce")
-		}
-		nonce = c.Nonce.GetI(0)
-	default:
-		return fmt.Errorf("unknown profile: %s", expectedProfile)
-	}
-
-	if err := isPSAHashType(nonce); err != nil {
-		return fmt.Errorf("invalid nonce: %w", err)
-	}
-
-	return nil
+	_, err := c.nonceByProfile(expectedProfile)
+	return err
 }
 
 func (c *Claims) validateSwComponents() error {
