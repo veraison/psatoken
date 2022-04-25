@@ -6,6 +6,7 @@ package psatoken
 import (
 	_ "crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"testing"
@@ -30,6 +31,8 @@ var (
 		0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
 		0x00, 0x01, 0x02, 0x03, 0x00, 0x01, 0x02, 0x03,
 	}
+
+	testUnknownProfile = "http://unknown/profile/1.2.3"
 )
 
 // Load JSON test vector without running the PSA token validation logics so
@@ -391,6 +394,102 @@ func TestClaims_getProfile_legacy_ok(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, expected, actual)
+}
+
+func TestClaims_GetNonce_legacy_ok(t *testing.T) {
+	expected := testNonce
+
+	oldProfile := PSA_PROFILE_1
+
+	tv := Claims{
+		LegacyProfile: &oldProfile,
+		LegacyNonce:   &expected,
+	}
+
+	actual, err := tv.GetNonce()
+
+	assert.Nil(t, err)
+	assert.Equal(t, expected, actual)
+}
+
+func TestClaims_GetNonce_ok(t *testing.T) {
+	profile, err := eat.NewProfile(PSA_PROFILE_2)
+	require.NoError(t, err)
+
+	nonce := eat.Nonce{}
+	require.NoError(t, nonce.Add(testNonce))
+
+	tv := Claims{
+		Profile: profile,
+		Nonce:   &nonce,
+	}
+
+	actual, err := tv.GetNonce()
+
+	assert.Nil(t, err)
+	assert.Equal(t, testNonce, actual)
+}
+
+func TestClaims_GetNonce_profile2_mismatch(t *testing.T) {
+	profile, err := eat.NewProfile(PSA_PROFILE_2)
+	require.NoError(t, err)
+
+	tv := Claims{
+		Profile:     profile,
+		LegacyNonce: &testNonce,
+	}
+
+	_, err = tv.GetNonce()
+
+	assert.EqualError(t, err, "missing mandatory nonce")
+}
+
+func TestClaims_GetNonce_profile1_mismatch(t *testing.T) {
+	profile := PSA_PROFILE_1
+
+	nonce := eat.Nonce{}
+	require.NoError(t, nonce.Add(testNonce))
+
+	tv := Claims{
+		LegacyProfile: &profile,
+		Nonce:         &nonce,
+	}
+
+	_, err := tv.GetNonce()
+
+	assert.EqualError(t, err, "missing mandatory nonce")
+}
+
+func TestClaims_GetNonce_unknown_profile(t *testing.T) {
+	profile, err := eat.NewProfile(testUnknownProfile)
+	require.NoError(t, err)
+
+	tv := Claims{
+		Profile:     profile,
+		LegacyNonce: &testNonce,
+	}
+
+	expectedErr := fmt.Sprintf("unknown profile: %s", testUnknownProfile)
+
+	_, err = tv.GetNonce()
+
+	assert.EqualError(t, err, expectedErr)
+}
+
+func TestClaims_GetNonce_no_profile(t *testing.T) {
+	nonce := eat.Nonce{}
+	require.NoError(t, nonce.Add(testNonce))
+
+	legacyNonce := testNonce
+
+	tv := Claims{
+		Nonce:       &nonce,
+		LegacyNonce: &legacyNonce,
+	}
+
+	_, err := tv.GetNonce()
+
+	assert.EqualError(t, err, "no profile set")
 }
 
 func TestClaims_getProfile_profile2_ok(t *testing.T) {
