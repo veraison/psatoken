@@ -359,14 +359,14 @@ func TestClaims_ToJSON_ok(t *testing.T) {
 	assert.JSONEq(t, expected, actual, "JSON encoded PSA token does not match")
 }
 
-func TestClaims_getProfile_no_profile(t *testing.T) {
+func TestClaims_GetProfile_no_profile(t *testing.T) {
 	tv := Claims{}
 
-	_, err := tv.getProfile()
+	_, err := tv.GetProfile()
 	assert.EqualError(t, err, "no profile set")
 }
 
-func TestClaims_getProfile_confusing_profile_settings(t *testing.T) {
+func TestClaims_GetProfile_confusing_profile_settings(t *testing.T) {
 	newProfile, err := eat.NewProfile(PSA_PROFILE_2)
 	require.Nil(t, err)
 
@@ -377,11 +377,11 @@ func TestClaims_getProfile_confusing_profile_settings(t *testing.T) {
 		LegacyProfile: &oldProfile,
 	}
 
-	_, err = tv.getProfile()
+	_, err = tv.GetProfile()
 	assert.EqualError(t, err, "both legacy and new profile claims are set")
 }
 
-func TestClaims_getProfile_legacy_ok(t *testing.T) {
+func TestClaims_GetProfile_legacy_ok(t *testing.T) {
 	oldProfile := PSA_PROFILE_1
 
 	tv := Claims{
@@ -390,7 +390,7 @@ func TestClaims_getProfile_legacy_ok(t *testing.T) {
 
 	expected := PSA_PROFILE_1
 
-	actual, err := tv.getProfile()
+	actual, err := tv.GetProfile()
 
 	assert.Nil(t, err)
 	assert.Equal(t, expected, actual)
@@ -492,7 +492,7 @@ func TestClaims_GetNonce_no_profile(t *testing.T) {
 	assert.EqualError(t, err, "no profile set")
 }
 
-func TestClaims_getProfile_profile2_ok(t *testing.T) {
+func TestClaims_GetProfile_profile2_ok(t *testing.T) {
 	newProfile, err := eat.NewProfile(PSA_PROFILE_2)
 	require.Nil(t, err)
 
@@ -502,7 +502,7 @@ func TestClaims_getProfile_profile2_ok(t *testing.T) {
 
 	expected := PSA_PROFILE_2
 
-	actual, err := tv.getProfile()
+	actual, err := tv.GetProfile()
 
 	assert.Nil(t, err)
 	assert.Equal(t, expected, actual)

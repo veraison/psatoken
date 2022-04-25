@@ -232,7 +232,7 @@ func (c *Claims) instIDByProfile(profile string) *[]byte {
 }
 
 func (c Claims) GetInstanceID() (*[]byte, error) {
-	profile, err := c.getProfile()
+	profile, err := c.GetProfile()
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +274,7 @@ func (c *Claims) SetNonce(nonce []byte) error {
 		return err
 	}
 
-	profile, err := c.getProfile()
+	profile, err := c.GetProfile()
 	if err != nil {
 		return err
 	}
@@ -299,7 +299,7 @@ func (c *Claims) SetNonce(nonce []byte) error {
 }
 
 func (c Claims) GetNonce() ([]byte, error) {
-	profile, err := c.getProfile()
+	profile, err := c.GetProfile()
 	if err != nil {
 		return nil, err
 	}
@@ -312,7 +312,7 @@ func (c Claims) GetNonce() ([]byte, error) {
 	return nonce, nil
 }
 
-func (c Claims) getProfile() (string, error) {
+func (c Claims) GetProfile() (string, error) {
 	if c.Profile == nil && c.LegacyProfile == nil {
 		return "", errors.New("no profile set")
 	}
