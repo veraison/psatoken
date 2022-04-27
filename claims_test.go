@@ -359,14 +359,14 @@ func TestClaims_ToJSON_ok(t *testing.T) {
 	assert.JSONEq(t, expected, actual, "JSON encoded PSA token does not match")
 }
 
-func TestClaims_getProfile_no_profile(t *testing.T) {
+func TestClaims_GetProfile_no_profile(t *testing.T) {
 	tv := Claims{}
 
-	_, err := tv.getProfile()
+	_, err := tv.GetProfile()
 	assert.EqualError(t, err, "no profile set")
 }
 
-func TestClaims_getProfile_confusing_profile_settings(t *testing.T) {
+func TestClaims_GetProfile_confusing_profile_settings(t *testing.T) {
 	newProfile, err := eat.NewProfile(PSA_PROFILE_2)
 	require.Nil(t, err)
 
@@ -377,11 +377,11 @@ func TestClaims_getProfile_confusing_profile_settings(t *testing.T) {
 		LegacyProfile: &oldProfile,
 	}
 
-	_, err = tv.getProfile()
+	_, err = tv.GetProfile()
 	assert.EqualError(t, err, "both legacy and new profile claims are set")
 }
 
-func TestClaims_getProfile_legacy_ok(t *testing.T) {
+func TestClaims_GetProfile_legacy_ok(t *testing.T) {
 	oldProfile := PSA_PROFILE_1
 
 	tv := Claims{
@@ -390,7 +390,7 @@ func TestClaims_getProfile_legacy_ok(t *testing.T) {
 
 	expected := PSA_PROFILE_1
 
-	actual, err := tv.getProfile()
+	actual, err := tv.GetProfile()
 
 	assert.Nil(t, err)
 	assert.Equal(t, expected, actual)
@@ -492,7 +492,7 @@ func TestClaims_GetNonce_no_profile(t *testing.T) {
 	assert.EqualError(t, err, "no profile set")
 }
 
-func TestClaims_getProfile_profile2_ok(t *testing.T) {
+func TestClaims_GetProfile_profile2_ok(t *testing.T) {
 	newProfile, err := eat.NewProfile(PSA_PROFILE_2)
 	require.Nil(t, err)
 
@@ -502,10 +502,101 @@ func TestClaims_getProfile_profile2_ok(t *testing.T) {
 
 	expected := PSA_PROFILE_2
 
-	actual, err := tv.getProfile()
+	actual, err := tv.GetProfile()
 
 	assert.Nil(t, err)
 	assert.Equal(t, expected, actual)
+}
+
+func TestClaims_SetNonce_unknown_profile(t *testing.T) {
+	profile, err := eat.NewProfile(testUnknownProfile)
+	require.NoError(t, err)
+
+	var nonce eat.Nonce
+	err = nonce.Add(testNonce)
+	require.NoError(t, err)
+
+	c := Claims{
+		Profile: profile,
+		Nonce:   &nonce,
+	}
+
+	expectedErr := fmt.Sprintf("unknown profile: %s", testUnknownProfile)
+
+	err = c.SetNonce(testNonce)
+	assert.EqualError(t, err, expectedErr)
+}
+
+func TestClaims_SetNonce_already_set(t *testing.T) {
+	profile, err := eat.NewProfile(PSA_PROFILE_2)
+	require.NoError(t, err)
+
+	var nonce eat.Nonce
+	err = nonce.Add(testNonce)
+	require.NoError(t, err)
+
+	c := Claims{
+		Profile: profile,
+		Nonce:   &nonce,
+	}
+
+	expectedErr := "nonce already set"
+
+	err = c.SetNonce(testNonce)
+	assert.EqualError(t, err, expectedErr)
+}
+
+func TestClaims_SetNonce_profile2_ok_roundtrip(t *testing.T) {
+	profile, err := eat.NewProfile(PSA_PROFILE_2)
+	require.NoError(t, err)
+
+	c := Claims{
+		Profile: profile,
+	}
+
+	err = c.SetNonce(testNonce)
+	assert.NoError(t, err)
+
+	actual, err := c.GetNonce()
+	assert.NoError(t, err)
+	assert.Equal(t, testNonce, actual)
+}
+
+func TestClaims_SetNonce_profile1_ok_roundtrip(t *testing.T) {
+	profile := PSA_PROFILE_1
+
+	c := Claims{
+		LegacyProfile: &profile,
+	}
+
+	err := c.SetNonce(testNonce)
+	assert.NoError(t, err)
+
+	actual, err := c.GetNonce()
+	assert.NoError(t, err)
+	assert.Equal(t, testNonce, actual)
+}
+
+func TestClaims_SetNonce_wrong_size(t *testing.T) {
+	c := Claims{}
+
+	nonceWrongSize := []byte("ninebytes")
+
+	expectedErr := "length 9 (psa-hash-type MUST be 32, 48 or 64 bytes)"
+
+	err := c.SetNonce(nonceWrongSize)
+
+	assert.EqualError(t, err, expectedErr)
+}
+
+func TestClaims_SetNonce_without_profile(t *testing.T) {
+	c := Claims{}
+
+	expectedErr := "no profile set"
+
+	err := c.SetNonce(testNonce)
+
+	assert.EqualError(t, err, expectedErr)
 }
 
 func makeClaims(t *testing.T) Claims {

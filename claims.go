@@ -232,7 +232,7 @@ func (c *Claims) instIDByProfile(profile string) *[]byte {
 }
 
 func (c Claims) GetInstanceID() (*[]byte, error) {
-	profile, err := c.getProfile()
+	profile, err := c.GetProfile()
 	if err != nil {
 		return nil, err
 	}
@@ -269,8 +269,37 @@ func (c *Claims) nonceByProfile(profile string) ([]byte, error) {
 	return nonce, nil
 }
 
+func (c *Claims) SetNonce(nonce []byte) error {
+	if err := isPSAHashType(nonce); err != nil {
+		return err
+	}
+
+	profile, err := c.GetProfile()
+	if err != nil {
+		return err
+	}
+
+	switch profile {
+	case PSA_PROFILE_1:
+		c.LegacyNonce = &nonce
+	case PSA_PROFILE_2:
+		if c.Nonce != nil {
+			return errors.New("nonce already set")
+		}
+		var n eat.Nonce
+		if err = n.Add(nonce); err != nil {
+			return err
+		}
+		c.Nonce = &n
+	default:
+		return fmt.Errorf("unknown profile: %s", profile)
+	}
+
+	return nil
+}
+
 func (c Claims) GetNonce() ([]byte, error) {
-	profile, err := c.getProfile()
+	profile, err := c.GetProfile()
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +312,7 @@ func (c Claims) GetNonce() ([]byte, error) {
 	return nonce, nil
 }
 
-func (c Claims) getProfile() (string, error) {
+func (c Claims) GetProfile() (string, error) {
 	if c.Profile == nil && c.LegacyProfile == nil {
 		return "", errors.New("no profile set")
 	}
