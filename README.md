@@ -12,11 +12,7 @@ Compliant implementation of [draft-tschofenig-rats-psa-token-08](https://datatra
 * `make test` (or just `make`) to run the unit tests;
 * `make coverage` to get code coverage stats;
 * `make lint` to run the code linter (requires [golangci-lint](https://golangci-lint.run/usage/install/);
-* (!) `make fuzz` to run the code fuzzer using data from the `corpus` directory (requires [go-fuzz](https://github.com/dvyukov/go-fuzz));
-* `make crashers` to run the crashing test cases once `make fuzz` has completed (or even _while_ it's running if the reported "crashers" is not zero).
 * `make docker` creates a docker image of the psatoken CLI
-
-(!) The fuzz corpus has currently around 750 entries, and it takes an unholy amount of time and resources on my laptop (Quad-Core Intel Core i7 2.7 GHz with 16 GB of RAM) to complete a single run.  GUYS, DON'T TRY THIS AT HOME!
 
 ## Docker image
 
