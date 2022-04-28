@@ -21,8 +21,6 @@ lint-extra: ; @golangci-lint run --issues-exit-code=0 -E dupl -E gocritic -E gos
 .PHONY: clean
 clean: ; $(RM) -r $(CLEANFILES)
 
-#TODO Reinstate Fuzz via Issue 24
-
 .PHONY: docker
 docker: ; docker build --pull --rm -f "cmd/client/Dockerfile" -t psatoken-client:latest "cmd/client" 
 
