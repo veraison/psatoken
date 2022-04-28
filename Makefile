@@ -21,16 +21,6 @@ lint-extra: ; @golangci-lint run --issues-exit-code=0 -E dupl -E gocritic -E gos
 .PHONY: clean
 clean: ; $(RM) -r $(CLEANFILES)
 
-.PHONY: fuzz
-fuzz: ; go-fuzz-build && go-fuzz
-
-.PHONY: crashers
-crashers:
-	@env TEST_FUZZ_CRASHERS=1 go test -v -run TestPSAToken_fuzzer_crashers
-CLEANFILES += psatoken-fuzz.zip
-CLEANFILES += crashers
-CLEANFILES += suppressions
-
 .PHONY: docker
 docker: ; docker build --pull --rm -f "cmd/client/Dockerfile" -t psatoken-client:latest "cmd/client" 
 
@@ -46,8 +36,6 @@ help:
 	@echo "      lint: run golangci-lint using configuration from .golangci.yml"
 	@echo "lint-extra: run golangci-lint using configuration from .golangci.yml"
 	@echo "     clean: remove garbage"
-	@echo "      fuzz: run go-fuzz using test vectors from corpus/"
-	@echo "  crashers: go through the PDUs that managed to crash the fuzzer"
 	@echo "    docker: create a docker image of the psatoken-client CLI"
 	@echo "  licenses: check licenses of dependent packages"
 	@echo
