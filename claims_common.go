@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	ImplIDLen = 32 // psa-implementation-id size (bytes .size 32)
-	InstIDLen = 33 // psa-instance-id size (bytes .size 33)
+	ImplIDLen                 = 32 // psa-implementation-id size (bytes .size 32)
+	InstIDLen                 = 33 // psa-instance-id size (bytes .size 33)
+	CertificationReferenceLen = 13 // psa-certification-reference length (EAN-13)
 )
 
 const (
@@ -132,7 +133,8 @@ func isValidBootSeed(v []byte, profile string) error {
 func isValidCertificationReference(v string) error {
 	notDigit := func(c rune) bool { return c < '0' || c > '9' }
 
-	if len(v) != 13 || strings.IndexFunc(v, notDigit) != -1 {
+	if len(v) != CertificationReferenceLen ||
+		strings.IndexFunc(v, notDigit) != -1 {
 		return fmt.Errorf(
 			"%w: MUST be in EAN-13 format",
 			ErrWrongSyntax,
