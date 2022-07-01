@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
-Package psatoken provides an implementation of the following two PSA attesation
+Package psatoken provides an implementation of the following two PSA attestation
 token profiles: PSA_IOT_PROFILE_1 and http://arm.com/psa/2.0.0
 
 Creating a PSA Token

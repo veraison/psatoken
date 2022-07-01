@@ -196,7 +196,7 @@ func (c P1Claims) GetSoftwareComponents() ([]SwComponent, error) {
 		return nil,
 			fmt.Errorf(
 				"%w: psa-no-sw-measurement and psa-software-components cannot be present at the same time",
-				ErrWrongSyntax,
+				ErrWrongClaimSyntax,
 			)
 	}
 

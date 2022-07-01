@@ -204,7 +204,7 @@ func (c P2Claims) GetNonce() ([]byte, error) {
 	l := v.Len()
 
 	if l != 1 {
-		return nil, fmt.Errorf("%w: got %d nonces, want 1", ErrWrongSyntax, l)
+		return nil, fmt.Errorf("%w: got %d nonces, want 1", ErrWrongClaimSyntax, l)
 	}
 
 	n := v.GetI(0)

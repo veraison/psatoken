@@ -88,7 +88,7 @@ func isValidSecurityLifeCycle(v uint16) error {
 	// Accept any security lifecycle in the state machine, including values that
 	// can't produce trustable PSA evidence.
 	if securityLifeCycleToString(v) == "invalid" {
-		return fmt.Errorf("%w: value %d is invalid", ErrWrongSyntax, v)
+		return fmt.Errorf("%w: value %d is invalid", ErrWrongClaimSyntax, v)
 	}
 
 	return nil
@@ -100,7 +100,7 @@ func isValidImplID(v []byte) error {
 	if l != ImplIDLen {
 		return fmt.Errorf(
 			"%w: invalid length %d (MUST be %d bytes)",
-			ErrWrongSyntax, l, ImplIDLen,
+			ErrWrongClaimSyntax, l, ImplIDLen,
 		)
 	}
 
@@ -115,14 +115,14 @@ func isValidBootSeed(v []byte, profile string) error {
 		if l < 8 || l > 32 {
 			return fmt.Errorf(
 				"%w: invalid length %d (MUST be between 8 and 32 bytes)",
-				ErrWrongSyntax, l,
+				ErrWrongClaimSyntax, l,
 			)
 		}
 	case PsaProfile1:
 		if l != 32 {
 			return fmt.Errorf(
 				"%w: invalid length %d (MUST be 32 bytes)",
-				ErrWrongSyntax, l,
+				ErrWrongClaimSyntax, l,
 			)
 		}
 	}
@@ -137,7 +137,7 @@ func isValidCertificationReference(v string) error {
 		strings.IndexFunc(v, notDigit) != -1 {
 		return fmt.Errorf(
 			"%w: MUST be in EAN-13 format",
-			ErrWrongSyntax,
+			ErrWrongClaimSyntax,
 		)
 	}
 
@@ -150,7 +150,7 @@ func isPSAHashType(b []byte) error {
 	if l != 32 && l != 48 && l != 64 {
 		return fmt.Errorf(
 			"%w: length %d (psa-hash-type MUST be 32, 48 or 64 bytes)",
-			ErrWrongSyntax, l,
+			ErrWrongClaimSyntax, l,
 		)
 	}
 
@@ -163,14 +163,14 @@ func isValidInstID(v []byte) error {
 	if l != InstIDLen {
 		return fmt.Errorf(
 			"%w: invalid length %d (MUST be %d bytes)",
-			ErrWrongSyntax, l, InstIDLen,
+			ErrWrongClaimSyntax, l, InstIDLen,
 		)
 	}
 
 	if v[0] != 0x01 {
 		return fmt.Errorf(
 			"%w: invalid EUID type (MUST be RAND=0x01)",
-			ErrWrongSyntax,
+			ErrWrongClaimSyntax,
 		)
 	}
 
@@ -180,7 +180,7 @@ func isValidInstID(v []byte) error {
 func isValidVSI(v string) error {
 	// https://github.com/thomas-fossati/draft-psa-token/issues/59
 	if v == "" {
-		return fmt.Errorf("%w: empty string", ErrWrongSyntax)
+		return fmt.Errorf("%w: empty string", ErrWrongClaimSyntax)
 	}
 
 	return nil
@@ -188,7 +188,7 @@ func isValidVSI(v string) error {
 
 func isValidSwComponents(scs []SwComponent) error {
 	if len(scs) == 0 {
-		return fmt.Errorf("%w: there MUST be at least one entry", ErrWrongSyntax)
+		return fmt.Errorf("%w: there MUST be at least one entry", ErrWrongClaimSyntax)
 	}
 
 	for i, sc := range scs {

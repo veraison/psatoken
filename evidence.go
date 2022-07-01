@@ -21,7 +21,7 @@ type Evidence struct {
 	message *cose.Sign1Message
 }
 
-// SetClaims attaches the supplied claims to the Evidence instance.W
+// SetClaims attaches the supplied claims to the Evidence instance.
 // Only successfully validated claims are allowed to be set.
 func (e *Evidence) SetClaims(claims IClaims) error {
 	if err := claims.Validate(); err != nil {
