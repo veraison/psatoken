@@ -1,0 +1,24 @@
+{
+  "eat-profile": "http://arm.com/psa/2.0.0",
+  "psa-client-id": 1,
+  "psa-security-lifecycle": 12288,
+  "psa-implementation-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+  "psa-boot-seed": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+  "psa-certification-reference": "1234567890123",
+  "psa-software-components": [
+    {
+      "measurement-type": "BL",
+      "measurement-value": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+      "signer-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA="
+    },
+    {
+      "measurement-type": "PRoT",
+      "measurement-value": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+      "signer-id": "UZIA/w=="
+    }
+  ],
+  "psa-nonce": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+  "psa-instance-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAh",
+  "psa-verification-service-indicator": "https://psa-verifier.org",
+  "psa-profile": "PSA_IOT_PROFILE_1"
+}

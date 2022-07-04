@@ -1,0 +1,10 @@
+{
+  "psa-client-id": 1,
+  "psa-security-lifecycle": 12288,
+  "psa-implementation-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+  "psa-boot-seed": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+  "psa-no-software-measurements": 1,
+  "psa-nonce": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+  "psa-instance-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAh",
+  "psa-profile": "PSA_IOT_PROFILE_1"
+}

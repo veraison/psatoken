@@ -3,26 +3,43 @@
 export GO111MODULE := on
 export SHELL := /bin/bash
 
-.PHONY: test
-test: ; @go test -v ./...
+GOPKG := github.com/veraison/psatoken
 
-.PHONY: coverage
-coverage:
-	@go test -v -cover -race -coverprofile=coverage.out ./... && \
-                go tool cover -html=coverage.out
-CLEANFILES += coverage.out
+GOLINT ?= golangci-lint
 
-.PHONY: lint
-lint: ; @golangci-lint run
+ifeq ($(MAKECMDGOALS),lint)
+GOLINT_ARGS ?= run --timeout=3m
+else
+  ifeq ($(MAKECMDGOALS),lint-extra)
+  GOLINT_ARGS ?= run --timeout=3m --issues-exit-code=0 -E dupl -E gocritic -E gosimple -E lll -E prealloc
+  endif
+endif
 
-.PHONY: lint-extra
-lint-extra: ; @golangci-lint run --issues-exit-code=0 -E dupl -E gocritic -E gosimple -E lll -E prealloc
+.PHONY: lint lint-extra
+lint lint-extra: ; $(GOLINT) $(GOLINT_ARGS)
 
-.PHONY: clean
-clean: ; $(RM) -r $(CLEANFILES)
+ifeq ($(MAKECMDGOALS),test)
+GOTEST_ARGS ?= -v -race $(GOPKG)
+else
+  ifeq ($(MAKECMDGOALS),test-cover)
+  GOTEST_ARGS ?= -short -cover $(GOPKG)
+  endif
+endif
 
-.PHONY: docker
-docker: ; docker build --pull --rm -f "cmd/client/Dockerfile" -t psatoken-client:latest "cmd/client" 
+COVER_THRESHOLD := $(shell grep '^name: cover' .github/workflows/ci-go-cover.yml | cut -c13-)
+
+.PHONY: test test-cover
+test test-cover: ; go test $(GOTEST_ARGS)
+
+presubmit:
+	@echo
+	@echo ">>> Check that the reported coverage figures are $(COVER_THRESHOLD)"
+	@echo
+	$(MAKE) test-cover
+	@echo
+	@echo ">>> Fix any lint error"
+	@echo
+	$(MAKE) lint
 
 .PHONY: licenses
 licenses: ; @./scripts/licenses.sh
@@ -30,12 +47,10 @@ licenses: ; @./scripts/licenses.sh
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo
-	@echo "      test: run the package tests (default)"
-	@echo "  coverage: run the package tests and show coverage profile"
-	@echo "      lint: run golangci-lint using configuration from .golangci.yml"
-	@echo "lint-extra: run golangci-lint using configuration from .golangci.yml"
-	@echo "     clean: remove garbage"
-	@echo "    docker: create a docker image of the psatoken-client CLI"
-	@echo "  licenses: check licenses of dependent packages"
-	@echo
+	@echo "  * test:       run unit tests for $(GOPKG)"
+	@echo "  * test-cover: run unit tests and measure coverage for $(GOPKG)"
+	@echo "  * licenses:   check licenses of dependent packages"
+	@echo "  * lint:       lint sources using default configuration"
+	@echo "  * lint-extra: lint sources using default configuration and some extra checkers"
+	@echo "  * presubmit:  check you are ready to push your local branch to remote"
+	@echo "  * help:       print this menu"

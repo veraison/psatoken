@@ -1,45 +1,48 @@
-// Copyright 2021 Contributors to the Veraison project.
+// Copyright 2021-2022 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
 /*
-Package psatoken provides an implementation of draft-tschofenig-rats-psa-token-08
+Package psatoken provides an implementation of the following two PSA attestation
+token profiles: PSA_IOT_PROFILE_1 and http://arm.com/psa/2.0.0
 
 Creating a PSA Token
 
-The creation of a PSA Token comprises the following steps:
+The creation of a PSA Token with profile http://arm.com/psa/2.0.0 comprises the
+following steps (error checking omitted for brevity):
 
-1. Populating a psatoken.Claims object with the expected claims:
+1. Create a claims-set with the desired profile:
 
-	claims := psatoken.Claims{
-		Profile: psatoken.PSA_PROFILE_2,
-		Nonce: nonce,
-		// see psatoken.Claims{} for other claims
-	}
+	claims, _ := NewClaims(PsaProfile2)
 
-2. Add the claims to a psatoken.Evidence object:
+2. Populate the mandatory part of the claims-set using the provided setter
+   methods
+
+	_ = claims.SetClientID(myClientID)
+	_ = claims.SetSecurityLifeCycle(mySecurityLifeCycle)
+	_ = claims.SetImplID(myImplID)
+	_ = claims.SetInstID(myInstID)
+	_ = claims.SetNonce(myNonce)
+	_ = claims.SetSoftwareComponents(mySwComponents)
+
+3. Populate any remaining optional claims:
+
+	_ = claims.SetBootSeed(myBootSeed)
+	_ = claims.SetCertificationReference(myCertificationReference)
+	_ = claims.SetVSI(myVSI)
+
+4. Add the claims to a psatoken.Evidence object (this will check the claims-set
+   syntactic validity):
 
 	evidence := psatoken.Evidence{}
 
-	err := evidence.SetClaims(claims, psatoken.PSA_PROFILE_2)
-	if err != nil {
-		// handle error
-	}
+	_ := evidence.SetClaims(claims)
 
-Note that the encoding profile needs to be specified and MUST match the
-content of the Profile claim.
-
-3. Seal the evidence and serialize it to CBOR:
+4. Seal the evidence and serialize it to CBOR:
 
 	// create a cose.Signer from private key
-	signer, err := cose.NewSignerFromKey(alg, key)
-	if err != nil {
-		// handle error
-	}
+	signer, _ := cose.NewSignerFromKey(alg, key)
 
-	cwt, err := evidence.Sign(signer)
-	if err != nil {
-		// handle error
-	}
+	cwt, _ := evidence.Sign(signer)
 
 The output is a COSE Web Token that can be used as PDU in an attestation
 protocol.
@@ -52,15 +55,10 @@ Consuming a PSA Token comprises the following steps:
 
 	evidence := psatoken.Evidence{}
 
-	err := evidence.FromCOSE(cwt, psatoken.PSA_PROFILE_2, psatoken.PSA_PROFILE_1)
-	if err != nil {
-		// handle error
-	}
-
-Note that at least one supported profile MUST be supplied.
+	_ := evidence.FromCOSE(cwt)
 
 2. Verify using the public key associated with the InstanceID claim contained
-in the token:
+   in the token:
 
 	// Lookup the verification public key (crypto.PublicKey) using the
 	// InstanceID

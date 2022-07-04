@@ -78,11 +78,9 @@ issues:
         - goimports
         - gomnd
         - lll
-    - path: psatoken_fuzz_test.go
+    - path: pretty_test_vectors.go
       linters:
-        # the Fuzz function is only invoked by go-fuzz, therefore golangci will
-        # see it as unused
-        - unused
+        - lll
 
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration

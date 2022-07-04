@@ -1,4 +1,4 @@
-// Copyright 2021 Contributors to the Veraison project.
+// Copyright 2021-2022 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
 package psatoken
@@ -17,23 +17,18 @@ import (
 // the underlying claims
 // nolint: golint
 type Evidence struct {
-	Claims  Claims
+	Claims  IClaims
 	message *cose.Sign1Message
 }
 
-// SetClaims attaches the supplied claims to the Evidence instance. The claims
-// are checked for consistency with the given profile.
-func (e *Evidence) SetClaims(claims *Claims, profile string) error {
-	if err := checkSupportedProfiles(profile); err != nil {
-		return err
-	}
-
-	err := claims.validate(profile)
-	if err != nil {
+// SetClaims attaches the supplied claims to the Evidence instance.
+// Only successfully validated claims are allowed to be set.
+func (e *Evidence) SetClaims(claims IClaims) error {
+	if err := claims.Validate(); err != nil {
 		return fmt.Errorf("validation failed: %w", err)
 	}
 
-	e.Claims = *claims
+	e.Claims = claims
 
 	return nil
 }
@@ -43,59 +38,31 @@ func (e *Evidence) SetClaims(claims *Claims, profile string) error {
 // A call to this function on Evidence that has not been successfully verified
 // is meaningless.
 func (e *Evidence) GetInstanceID() *[]byte {
-	instID, err := e.Claims.GetInstanceID()
+	instID, err := e.Claims.GetInstID()
 	if err != nil {
 		return nil
 	}
-	return instID
+	return &instID
 }
 
 // FromCOSE extracts the PSA claims wrapped in the supplied CWT. As per spec,
-// the only acceptable security envelope is COSE-Sign1.
-func (e *Evidence) FromCOSE(cwt []byte, supportedProfiles ...string) error {
-	err := checkSupportedProfiles(supportedProfiles...)
-	if err != nil {
-		return err
-	}
+// the only acceptable security envelope is COSE_Sign1.
+func (e *Evidence) FromCOSE(cwt []byte) error {
+	var err error
 
 	if !cose.IsSign1Message(cwt) {
-		return errors.New("the supplied CWT is not a COSE-Sign1 message")
+		return errors.New("the supplied CWT is not a COSE_Sign1 message")
 	}
 
 	e.message = cose.NewSign1Message()
 
-	err = e.message.UnmarshalCBOR(cwt)
-	if err != nil {
+	if err = e.message.UnmarshalCBOR(cwt); err != nil {
 		return fmt.Errorf("failed CBOR decoding for CWT: %w", err)
 	}
 
-	err = e.Claims.FromCBOR(e.message.Payload)
-	if err != nil {
+	if e.Claims, err = DecodeClaims(e.message.Payload); err != nil {
 		return fmt.Errorf("failed CBOR decoding of PSA claims: %w", err)
 	}
-
-	// We can assume that the prunedProfile array has at least one element:
-	// the condition has been checked at the top of the function by the call
-	// to checkSupportedProfiles
-	for _, profile := range supportedProfiles {
-		verr := e.Claims.validate(profile)
-		if verr == nil {
-			err = nil
-			break
-		}
-
-		if err == nil {
-			err = fmt.Errorf("%v", verr)
-		} else {
-			err = fmt.Errorf("%v + %v", err, verr)
-		}
-	}
-
-	if err != nil {
-		return fmt.Errorf("claims validation failed: %w", err)
-	}
-
-	e.Claims.decorate()
 
 	return nil
 }
