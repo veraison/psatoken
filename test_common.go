@@ -47,8 +47,9 @@ var (
 		0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
 	}
-	testCertificationReference = "1234567890123"
-	testNonce                  = []byte{
+	testCertificationReferenceP1 = "1234567890123"
+	testCertificationReferenceP2 = "1234567890123-12345"
+	testNonce                    = []byte{
 		1, 1, 1, 1, 1, 1, 1, 1,
 		1, 1, 1, 1, 1, 1, 1, 1,
 		1, 1, 1, 1, 1, 1, 1, 1,
@@ -221,7 +222,7 @@ func validateNegatives(t *testing.T, profile string) {
 		// 10
 		{
 			fPath: "testvectors/json/test-hardware-version-invalid.json",
-			eStr:  `validating psa-certification-reference: wrong syntax for claim: MUST be in EAN-13 format`,
+			eStr:  `validating psa-certification-reference: wrong syntax for claim: MUST be in EAN-13`,
 		},
 		// 11
 		{
@@ -338,7 +339,7 @@ func validateNegatives(t *testing.T, profile string) {
 		require.Nil(t, err, "unable to load %s: %v", tc.fPath, err)
 
 		err = p.Validate()
-		assert.EqualError(t, err, tc.eStr, "failed TCase at index %d (%s)", i, tc.fPath)
+		assert.ErrorContains(t, err, tc.eStr, "failed TCase at index %d (%s)", i, tc.fPath)
 	}
 }
 

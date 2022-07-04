@@ -174,11 +174,11 @@ func Test_IClaims_SetBootSeed_invalid(t *testing.T) {
 func Test_IClaims_SetCertificationReference_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
-	expectedErr := `wrong syntax for claim: MUST be in EAN-13 format`
+	expectedErr := `wrong syntax for claim: MUST be in EAN-13`
 
 	for _, c := range tv {
 		err := c.SetCertificationReference("")
-		assert.EqualError(t, err, expectedErr)
+		assert.ErrorContains(t, err, expectedErr)
 	}
 }
 

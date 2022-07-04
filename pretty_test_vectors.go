@@ -1,5 +1,3 @@
-// Copyright 2022 Contributors to the Veraison project.
-// SPDX-License-Identifier: Apache-2.0
 package psatoken
 
 // automatically generated from P1ClaimsAll.diag
@@ -179,8 +177,8 @@ aa                                      # map(10)
    48                                   # bytes(8)
       0000000000000000                  # "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
    19 095e                              # unsigned(2398)
-   6d                                   # text(13)
-      31323334353637383930313233        # "1234567890123"
+   73                                   # text(19)
+      313233343536373839303132332d3132333435 # "1234567890123-12345"
    19 095f                              # unsigned(2399)
    81                                   # array(1)
       a2                                # map(2)
@@ -275,8 +273,8 @@ aa                                      # map(10)
    48                                   # bytes(8)
       0000000000000000                  # "\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000"
    19 095e                              # unsigned(2398)
-   6d                                   # text(13)
-      31323334353637383930313233        # "1234567890123"
+   73                                   # text(19)
+      313233343536373839303132332d3132333435 # "1234567890123-12345"
    19 095f                              # unsigned(2399)
    81                                   # array(1)
       a2                                # map(2)
