@@ -49,6 +49,7 @@ func Test_DecodeClaims_p2_ok(t *testing.T) {
 	tvs := []string{
 		testEncodedP2ClaimsAll,
 		testEncodedP2ClaimsMandatoryOnly,
+		testEncodedP2ClaimsTFM,
 	}
 
 	for _, tv := range tvs {

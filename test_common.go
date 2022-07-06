@@ -29,6 +29,13 @@ var (
   "y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
   "d": "870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE"
 }`
+	TFMECKey = `{
+  "kty": "EC",
+  "crv": "P-256",
+  "x": "eeupDov0UKZ1FXatRZmwet-TjaO7C9F9ADbtSaLQ_D8",
+  "y": "v836iVa1aL_bhnPmSNi1jZKZVbFKJsMIDzQRfZcdaGQ",
+  "d": "qbRUsm1vkKTqMRk1ZMupH-xvmgAqfcBQS5Khk3E0WF8"
+}`
 	testNotCBOR                  = `6e6f745f63626f720a`
 	testClientIDSPE              = int32(2147483647)
 	testSecurityLifecycleSecured = uint16(SecurityLifecycleSecuredMin)

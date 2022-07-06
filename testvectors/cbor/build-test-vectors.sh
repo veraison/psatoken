@@ -15,6 +15,7 @@ DIAG_FILES="${DIAG_FILES} P2ClaimsAll"
 DIAG_FILES="${DIAG_FILES} P2ClaimsMandatoryOnly"
 DIAG_FILES="${DIAG_FILES} P2ClaimsMissingMandatoryNonce"
 DIAG_FILES="${DIAG_FILES} P2ClaimsInvalidMultiNonce"
+DIAG_FILES="${DIAG_FILES} P2ClaimsTFM"
 
 TV_DOT_GO=${TV_DOT_GO?must be set in the environment.}
 
@@ -24,7 +25,7 @@ for t in ${DIAG_FILES}
 do
 	echo "// automatically generated from $t.diag" >> ${TV_DOT_GO}
 	echo "var testEncoded${t} = "'`' >> ${TV_DOT_GO}
-	cat ${t}.diag | diag2pretty.rb >> ${TV_DOT_GO}
+	cat ${t}.diag | diag2cbor.rb | xxd -p >> ${TV_DOT_GO}
 	echo '`' >> ${TV_DOT_GO}
 	gofmt -w ${TV_DOT_GO}
 done

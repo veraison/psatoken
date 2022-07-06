@@ -137,9 +137,10 @@ func isValidBootSeed(v []byte, profile string) error {
 func isValidCertificationReference(v, profile string) error {
 	switch profile {
 	case PsaProfile1:
-		if !CertificationReferenceP1RE.MatchString(v) {
+		if !CertificationReferenceP1RE.MatchString(v) &&
+			!CertificationReferenceP2RE.MatchString(v) {
 			return fmt.Errorf(
-				"%w: MUST be in EAN-13 format",
+				"%w: MUST be in EAN-13 or EAN-13+5 format",
 				ErrWrongClaimSyntax,
 			)
 		}
