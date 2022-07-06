@@ -82,12 +82,12 @@ b4016b312cc90fa0d629909eda28ed28013dfc71d8d33271
 
 	tokenSigner := signerFromJWK(t, TFMECKey)
 
-	var Evidence Evidence
+	var e Evidence
 
-	err := Evidence.FromCOSE(cwt)
+	err := e.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	err = Evidence.Verify(tokenSigner.Verifier().PublicKey)
+	err = e.Verify(tokenSigner.Verifier().PublicKey)
 	assert.NoError(t, err, "verification failed")
 }
 
@@ -117,12 +117,12 @@ e7f48a5eead228c5
 
 	tokenSigner := signerFromJWK(t, TFMECKey)
 
-	var Evidence Evidence
+	var e Evidence
 
-	err := Evidence.FromCOSE(cwt)
+	err := e.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	err = Evidence.Verify(tokenSigner.Verifier().PublicKey)
+	err = e.Verify(tokenSigner.Verifier().PublicKey)
 	assert.NoError(t, err, "verification failed")
 }
 
