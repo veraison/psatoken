@@ -16,6 +16,7 @@ func Test_DecodeClaims_p1_ok(t *testing.T) {
 		testEncodedP1ClaimsMandatoryOnlyNoSwMeasurements,
 		testEncodedP1ClaimsAll,
 		testEncodedP1ClaimsMandatoryOnly,
+		testEncodedP1ClaimsTFM,
 	}
 
 	for _, tv := range tvs {

@@ -15,6 +15,7 @@ DIAG_FILES="${DIAG_FILES} P2ClaimsAll"
 DIAG_FILES="${DIAG_FILES} P2ClaimsMandatoryOnly"
 DIAG_FILES="${DIAG_FILES} P2ClaimsMissingMandatoryNonce"
 DIAG_FILES="${DIAG_FILES} P2ClaimsInvalidMultiNonce"
+DIAG_FILES="${DIAG_FILES} P1ClaimsTFM"
 DIAG_FILES="${DIAG_FILES} P2ClaimsTFM"
 
 TV_DOT_GO=${TV_DOT_GO?must be set in the environment.}
