@@ -14,7 +14,7 @@ import (
 )
 
 func TestEvidence_p1_sign_and_verify(t *testing.T) {
-	tokenSigner := signerFromJWK(t, ECKey)
+	tokenSigner := signerFromJWK(t, testECKeyMatched)
 
 	var EvidenceIn Evidence
 
@@ -30,13 +30,13 @@ func TestEvidence_p1_sign_and_verify(t *testing.T) {
 
 	err = EvidenceOut.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
-	pk := pubKeyFromJWK(t, ECKey)
+	pk := pubKeyFromJWK(t, testECKeyMatched)
 	err = EvidenceOut.Verify(pk)
 	assert.NoError(t, err, "verification failed")
 }
 
 func TestEvidence_p2_sign_and_verify(t *testing.T) {
-	tokenSigner := signerFromJWK(t, ECKey)
+	tokenSigner := signerFromJWK(t, testECKeyMatched)
 
 	var EvidenceIn Evidence
 
@@ -53,7 +53,7 @@ func TestEvidence_p2_sign_and_verify(t *testing.T) {
 	err = EvidenceOut.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	pk := pubKeyFromJWK(t, ECKey)
+	pk := pubKeyFromJWK(t, testECKeyMatched)
 	err = EvidenceOut.Verify(pk)
 	assert.NoError(t, err, "verification failed")
 }
@@ -154,13 +154,6 @@ func TestEvidence_GetInstanceID_psa_profile_2_ok(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestEvidence_Sign_no_signer(t *testing.T) {
-	evidence := Evidence{}
-
-	_, err := evidence.Sign(nil)
-	assert.EqualError(t, err, "nil signer")
-}
-
 func TestEvidence_Verify_no_message(t *testing.T) {
 	evidence := Evidence{}
 	var pk crypto.PublicKey
@@ -169,8 +162,8 @@ func TestEvidence_Verify_no_message(t *testing.T) {
 	assert.EqualError(t, err, "no Sign1 message found")
 }
 
-func TestEvidence_p2_sign_and_verify_key_mismatch(t *testing.T) {
-	tokenSigner := signerFromJWK(t, ECKey)
+func TestEvidence_sign_and_verify_key_mismatch(t *testing.T) {
+	tokenSigner := signerFromJWK(t, testECKeyMatched)
 
 	var EvidenceIn Evidence
 
@@ -187,13 +180,13 @@ func TestEvidence_p2_sign_and_verify_key_mismatch(t *testing.T) {
 	err = EvidenceOut.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	pk := pubKeyFromJWK(t, ECKey1)
+	pk := pubKeyFromJWK(t, testECKeyUnmatched)
 	err = EvidenceOut.Verify(pk)
 	assert.EqualError(t, err, "verification error")
 }
 
-func TestEvidence_p2_sign_and_verify_alg_mismatch(t *testing.T) {
-	tokenSigner := signerFromJWK(t, ECKey)
+func TestEvidence_sign_and_verify_alg_mismatch(t *testing.T) {
+	tokenSigner := signerFromJWK(t, testECKeyMatched)
 
 	var EvidenceIn Evidence
 
@@ -213,5 +206,5 @@ func TestEvidence_p2_sign_and_verify_alg_mismatch(t *testing.T) {
 	var pk crypto.PublicKey
 
 	err = EvidenceOut.Verify(pk)
-	assert.EqualError(t, err, "unable to get new verifier: ES256: algorithm mismatch")
+	assert.EqualError(t, err, "unable to instantiate verifier: ES256: algorithm mismatch")
 }

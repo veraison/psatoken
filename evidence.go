@@ -66,10 +66,7 @@ func (e *Evidence) FromCOSE(cwt []byte) error {
 
 // Sign returns the Evidence wrapped in a CWT according to the supplied
 // go-cose Signer.  (For now only COSE-Sign1 is supported.)
-func (e *Evidence) Sign(signer *cose.Signer) ([]byte, error) {
-	if signer == nil {
-		return nil, errors.New("nil signer")
-	}
+func (e *Evidence) Sign(signer cose.Signer) ([]byte, error) {
 
 	e.message = cose.NewSign1Message()
 
@@ -79,7 +76,7 @@ func (e *Evidence) Sign(signer *cose.Signer) ([]byte, error) {
 		return nil, err
 	}
 
-	alg := (*signer).Algorithm()
+	alg := signer.Algorithm()
 
 	if strings.Contains(alg.String(), "unknown algorithm value") {
 		return nil, errors.New("signer has no algorithm")
@@ -87,7 +84,7 @@ func (e *Evidence) Sign(signer *cose.Signer) ([]byte, error) {
 
 	e.message.Headers.Protected.SetAlgorithm(alg)
 
-	err = e.message.Sign(rand.Reader, []byte(""), *signer)
+	err = e.message.Sign(rand.Reader, []byte(""), signer)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +111,7 @@ func (e *Evidence) Verify(pk crypto.PublicKey) error {
 
 	verifier, err := cose.NewVerifier(algo, pk)
 	if err != nil {
-		return fmt.Errorf("unable to get new verifier: %w", err)
+		return fmt.Errorf("unable to instantiate verifier: %w", err)
 	}
 
 	err = e.message.Verify([]byte(""), verifier)

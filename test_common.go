@@ -22,20 +22,21 @@ import (
 )
 
 var (
-	ECKey = `{
+	testECKeyMatched = `{
   "kty": "EC",
   "crv": "P-256",
   "x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
   "y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
   "d": "870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE"
 }`
-	ECKey1 = `{
-	"kty": "EC",
-	"crv": "P-256",
-	"x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqx7D4",
-	"y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
-	"d": "870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE"
-  }`
+	testECKeyUnmatched = `{
+  "kty": "EC",
+  "crv": "P-256",
+  "x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqx7D4",
+  "y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
+  "d": "870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE"
+}`
+
 	testNotCBOR                  = `6e6f745f63626f720a`
 	testClientIDSPE              = int32(2147483647)
 	testSecurityLifecycleSecured = uint16(SecurityLifecycleSecuredMin)
@@ -134,7 +135,15 @@ func loadJSONTestVectorFromFile(fn string, profile string) (IClaims, error) {
 	return p, nil
 }
 
-func signerFromJWK(t *testing.T, j string) *cose.Signer {
+func signerFromJWK(t *testing.T, j string) cose.Signer {
+	alg, key := getAlgAndKeyFromJWK(t, j)
+	s, err := cose.NewSigner(alg, key)
+	require.Nil(t, err)
+
+	return s
+}
+
+func getAlgAndKeyFromJWK(t *testing.T, j string) (cose.Algorithm, crypto.Signer) {
 	ks, err := jwk.ParseString(j)
 	require.Nil(t, err)
 
@@ -157,37 +166,11 @@ func signerFromJWK(t *testing.T, j string) *cose.Signer {
 	default:
 		require.True(t, false, "unknown private key type %v", reflect.TypeOf(key))
 	}
-
-	s, err := cose.NewSigner(alg, key)
-	require.Nil(t, err)
-
-	return &s
+	return alg, key
 }
 
 func pubKeyFromJWK(t *testing.T, j string) crypto.PublicKey {
-	ks, err := jwk.ParseString(j)
-	require.Nil(t, err)
-
-	var key crypto.Signer
-
-	err = ks.Keys[0].Raw(&key)
-	require.Nil(t, err)
-
-	var crv elliptic.Curve
-
-	switch v := key.(type) {
-	case *ecdsa.PrivateKey:
-		crv = v.Curve
-
-		if crv == elliptic.P256() {
-
-			break
-		}
-		require.True(t, false, "unknown elliptic curve %v", crv)
-	default:
-		require.True(t, false, "unknown private key type %v", reflect.TypeOf(key))
-	}
-
+	_, key := getAlgAndKeyFromJWK(t, j)
 	vk := key.Public()
 	return vk
 }
