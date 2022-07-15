@@ -3,7 +3,6 @@ module github.com/veraison/psatoken
 go 1.15
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.4.0
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lestrrat-go/jwx v1.0.8
