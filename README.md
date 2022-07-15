@@ -8,7 +8,8 @@ This is a compliant implementation of two specifications:
 The package exposes the following functionalities:
 
 * get / set claims in a profile independent way
-* sign / verify (COSE_Sign1)
+* validate the claims-set
+* sign / verify (using COSE_Sign1) the claims-set
 
 # Make targets
 
