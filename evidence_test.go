@@ -14,7 +14,7 @@ import (
 )
 
 func TestEvidence_p1_sign_and_verify(t *testing.T) {
-	tokenSigner := signerFromJWK(t, ECKey)
+	tokenSigner := signerFromJWK(t, testECKeyMatched)
 
 	var EvidenceIn Evidence
 
@@ -30,13 +30,13 @@ func TestEvidence_p1_sign_and_verify(t *testing.T) {
 
 	err = EvidenceOut.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
-
-	err = EvidenceOut.Verify(tokenSigner.Verifier().PublicKey)
+	pk := pubKeyFromJWK(t, testECKeyMatched)
+	err = EvidenceOut.Verify(pk)
 	assert.NoError(t, err, "verification failed")
 }
 
 func TestEvidence_p2_sign_and_verify(t *testing.T) {
-	tokenSigner := signerFromJWK(t, ECKey)
+	tokenSigner := signerFromJWK(t, testECKeyMatched)
 
 	var EvidenceIn Evidence
 
@@ -53,7 +53,8 @@ func TestEvidence_p2_sign_and_verify(t *testing.T) {
 	err = EvidenceOut.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	err = EvidenceOut.Verify(tokenSigner.Verifier().PublicKey)
+	pk := pubKeyFromJWK(t, testECKeyMatched)
+	err = EvidenceOut.Verify(pk)
 	assert.NoError(t, err, "verification failed")
 }
 
@@ -62,7 +63,7 @@ func TestEvidence_FromCOSE_cwt_is_not_cose_sign1(t *testing.T) {
 
 	err := e.FromCOSE([]byte{0x00})
 
-	assert.EqualError(t, err, "the supplied CWT is not a COSE_Sign1 message")
+	assert.EqualError(t, err, "failed CBOR decoding for CWT: cbor: invalid COSE_Sign1_Tagged object")
 }
 
 func TestEvidence_FromCOSE_empty_message(t *testing.T) {
@@ -153,17 +154,57 @@ func TestEvidence_GetInstanceID_psa_profile_2_ok(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestEvidence_Sign_no_signer(t *testing.T) {
-	evidence := Evidence{}
-
-	_, err := evidence.Sign(nil)
-	assert.EqualError(t, err, "nil signer")
-}
-
 func TestEvidence_Verify_no_message(t *testing.T) {
 	evidence := Evidence{}
 	var pk crypto.PublicKey
 
 	err := evidence.Verify(pk)
 	assert.EqualError(t, err, "no Sign1 message found")
+}
+
+func TestEvidence_sign_and_verify_key_mismatch(t *testing.T) {
+	tokenSigner := signerFromJWK(t, testECKeyMatched)
+
+	var EvidenceIn Evidence
+
+	err := EvidenceIn.SetClaims(mustBuildValidP2Claims(t, true))
+	assert.NoError(t, err)
+
+	cwt, err := EvidenceIn.Sign(tokenSigner)
+	assert.NoError(t, err, "signing failed")
+
+	fmt.Printf("PSA evidence (profile 2): %x\n", cwt)
+
+	var EvidenceOut Evidence
+
+	err = EvidenceOut.FromCOSE(cwt)
+	assert.NoError(t, err, "Sign1Message decoding failed")
+
+	pk := pubKeyFromJWK(t, testECKeyUnmatched)
+	err = EvidenceOut.Verify(pk)
+	assert.EqualError(t, err, "verification error")
+}
+
+func TestEvidence_sign_and_verify_alg_mismatch(t *testing.T) {
+	tokenSigner := signerFromJWK(t, testECKeyMatched)
+
+	var EvidenceIn Evidence
+
+	err := EvidenceIn.SetClaims(mustBuildValidP2Claims(t, true))
+	assert.NoError(t, err)
+
+	cwt, err := EvidenceIn.Sign(tokenSigner)
+	assert.NoError(t, err, "signing failed")
+
+	fmt.Printf("PSA evidence (profile 2): %x\n", cwt)
+
+	var EvidenceOut Evidence
+
+	err = EvidenceOut.FromCOSE(cwt)
+	assert.NoError(t, err, "Sign1Message decoding failed")
+
+	var pk crypto.PublicKey
+
+	err = EvidenceOut.Verify(pk)
+	assert.EqualError(t, err, "unable to instantiate verifier: ES256: algorithm mismatch")
 }

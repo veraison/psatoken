@@ -9,6 +9,7 @@ import (
 	_ "crypto/sha256" // used hash algorithms need to be imported explicitly
 	"errors"
 	"fmt"
+	"strings"
 
 	cose "github.com/veraison/go-cose"
 )
@@ -50,10 +51,6 @@ func (e *Evidence) GetInstanceID() *[]byte {
 func (e *Evidence) FromCOSE(cwt []byte) error {
 	var err error
 
-	if !cose.IsSign1Message(cwt) {
-		return errors.New("the supplied CWT is not a COSE_Sign1 message")
-	}
-
 	e.message = cose.NewSign1Message()
 
 	if err = e.message.UnmarshalCBOR(cwt); err != nil {
@@ -69,10 +66,7 @@ func (e *Evidence) FromCOSE(cwt []byte) error {
 
 // Sign returns the Evidence wrapped in a CWT according to the supplied
 // go-cose Signer.  (For now only COSE-Sign1 is supported.)
-func (e *Evidence) Sign(signer *cose.Signer) ([]byte, error) {
-	if signer == nil {
-		return nil, errors.New("nil signer")
-	}
+func (e *Evidence) Sign(signer cose.Signer) ([]byte, error) {
 
 	e.message = cose.NewSign1Message()
 
@@ -82,19 +76,20 @@ func (e *Evidence) Sign(signer *cose.Signer) ([]byte, error) {
 		return nil, err
 	}
 
-	alg := signer.GetAlg()
-	if alg == nil {
+	alg := signer.Algorithm()
+
+	if strings.Contains(alg.String(), "unknown algorithm value") {
 		return nil, errors.New("signer has no algorithm")
 	}
 
-	e.message.Headers.Protected[1] = alg.Value
+	e.message.Headers.Protected.SetAlgorithm(alg)
 
-	err = e.message.Sign(rand.Reader, []byte(""), *signer)
+	err = e.message.Sign(rand.Reader, []byte(""), signer)
 	if err != nil {
 		return nil, err
 	}
 
-	wrap, err := cose.Marshal(e.message)
+	wrap, err := e.message.MarshalCBOR()
 	if err != nil {
 		return nil, err
 	}
@@ -107,15 +102,16 @@ func (e *Evidence) Verify(pk crypto.PublicKey) error {
 	if e.message == nil {
 		return errors.New("no Sign1 message found")
 	}
+	protected := e.message.Headers.Protected
 
-	alg, err := cose.GetAlg(e.message.Headers)
+	algo, err := protected.Algorithm()
 	if err != nil {
 		return fmt.Errorf("unable to get verification algorithm: %w", err)
 	}
 
-	verifier := cose.Verifier{
-		Alg:       alg,
-		PublicKey: pk,
+	verifier, err := cose.NewVerifier(algo, pk)
+	if err != nil {
+		return fmt.Errorf("unable to instantiate verifier: %w", err)
 	}
 
 	err = e.message.Verify([]byte(""), verifier)
