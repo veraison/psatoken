@@ -30,7 +30,9 @@ func TestEvidence_p1_sign_and_verify(t *testing.T) {
 
 	err = EvidenceOut.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
+
 	pk := pubKeyFromJWK(t, testECKeyMatched)
+
 	err = EvidenceOut.Verify(pk)
 	assert.NoError(t, err, "verification failed")
 }
@@ -54,6 +56,7 @@ func TestEvidence_p2_sign_and_verify(t *testing.T) {
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
 	pk := pubKeyFromJWK(t, testECKeyMatched)
+
 	err = EvidenceOut.Verify(pk)
 	assert.NoError(t, err, "verification failed")
 }
@@ -81,14 +84,14 @@ b4016b312cc90fa0d629909eda28ed28013dfc71d8d33271
 `
 	cwt := mustHexDecode(t, tfmP2Sign1)
 
-	tokenSigner := signerFromJWK(t, TFMECKey)
-
 	var e Evidence
 
 	err := e.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	err = e.Verify(tokenSigner.Verifier().PublicKey)
+	pk := pubKeyFromJWK(t, TFMECKey)
+
+	err = e.Verify(pk)
 	assert.NoError(t, err, "verification failed")
 }
 
@@ -116,14 +119,14 @@ e7f48a5eead228c5
 `
 	cwt := mustHexDecode(t, tfmP1Sign1)
 
-	tokenSigner := signerFromJWK(t, TFMECKey)
-
 	var e Evidence
 
 	err := e.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	err = e.Verify(tokenSigner.Verifier().PublicKey)
+	pk := pubKeyFromJWK(t, TFMECKey)
+
+	err = e.Verify(pk)
 	assert.NoError(t, err, "verification failed")
 }
 
