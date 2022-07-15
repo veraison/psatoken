@@ -4,7 +4,7 @@
   "psa-implementation-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
   "psa-boot-seed": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
   "psa-no-software-measurements": 1,
-    "psa-software-components": [
+  "psa-software-components": [
     {
       "measurement-value": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
       "signer-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA="
@@ -16,5 +16,6 @@
   ],
   "psa-nonce": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
   "psa-instance-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAh",
-  "psa-profile": "PSA_IOT_PROFILE_1"
+  "psa-profile": "PSA_IOT_PROFILE_1",
+  "psa-certification-reference": "1234567890123-12345"
 }

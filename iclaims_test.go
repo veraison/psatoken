@@ -16,6 +16,7 @@ func Test_DecodeClaims_p1_ok(t *testing.T) {
 		testEncodedP1ClaimsMandatoryOnlyNoSwMeasurements,
 		testEncodedP1ClaimsAll,
 		testEncodedP1ClaimsMandatoryOnly,
+		testEncodedP1ClaimsTFM,
 	}
 
 	for _, tv := range tvs {
@@ -49,6 +50,7 @@ func Test_DecodeClaims_p2_ok(t *testing.T) {
 	tvs := []string{
 		testEncodedP2ClaimsAll,
 		testEncodedP2ClaimsMandatoryOnly,
+		testEncodedP2ClaimsTFM,
 	}
 
 	for _, tv := range tvs {
@@ -174,11 +176,13 @@ func Test_IClaims_SetBootSeed_invalid(t *testing.T) {
 func Test_IClaims_SetCertificationReference_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
-	expectedErr := `wrong syntax for claim: MUST be in EAN-13 format`
+	expectedErr := `wrong syntax for claim: MUST be in EAN-13`
 
 	for _, c := range tv {
-		err := c.SetCertificationReference("")
-		assert.EqualError(t, err, expectedErr)
+		for _, s := range []string{"", "abc", "123456789012", "1234567890123+1234S"} {
+			err := c.SetCertificationReference(s)
+			assert.ErrorContains(t, err, expectedErr)
+		}
 	}
 }
 

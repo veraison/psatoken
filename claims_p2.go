@@ -72,7 +72,7 @@ func (c *P2Claims) SetBootSeed(v []byte) error {
 }
 
 func (c *P2Claims) SetCertificationReference(v string) error {
-	return setCertificationReference(&c.CertificationReference, &v)
+	return setCertificationReference(&c.CertificationReference, &v, PsaProfile2)
 }
 
 func (c *P2Claims) SetSoftwareComponents(scs []SwComponent) error {
@@ -177,7 +177,7 @@ func (c P2Claims) GetBootSeed() ([]byte, error) {
 }
 
 func (c P2Claims) GetCertificationReference() (string, error) {
-	return getCertificationReference(c.CertificationReference)
+	return getCertificationReference(c.CertificationReference, PsaProfile2)
 }
 
 func (c P2Claims) GetSoftwareComponents() ([]SwComponent, error) {

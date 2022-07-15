@@ -42,7 +42,7 @@ func mustBuildValidP1Claims(t *testing.T, includeOptional, noSwMeasurements bool
 	require.NoError(t, err)
 
 	if includeOptional {
-		err = c.SetCertificationReference(testCertificationReference)
+		err = c.SetCertificationReference(testCertificationReferenceP1)
 		require.NoError(t, err)
 
 		err = c.SetVSI(testVSI)

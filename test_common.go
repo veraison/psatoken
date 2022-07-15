@@ -22,21 +22,27 @@ import (
 )
 
 var (
-	testECKeyMatched = `{
+	testECKeyA = `{
   "kty": "EC",
   "crv": "P-256",
   "x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
   "y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
   "d": "870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE"
 }`
-	testECKeyUnmatched = `{
+	testECKeyB = `{
   "kty": "EC",
   "crv": "P-256",
   "x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqx7D4",
   "y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
   "d": "870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE"
 }`
-
+	testTFMECKey = `{
+  "kty": "EC",
+  "crv": "P-256",
+  "x": "eeupDov0UKZ1FXatRZmwet-TjaO7C9F9ADbtSaLQ_D8",
+  "y": "v836iVa1aL_bhnPmSNi1jZKZVbFKJsMIDzQRfZcdaGQ",
+  "d": "qbRUsm1vkKTqMRk1ZMupH-xvmgAqfcBQS5Khk3E0WF8"
+ }`
 	testNotCBOR                  = `6e6f745f63626f720a`
 	testClientIDSPE              = int32(2147483647)
 	testSecurityLifecycleSecured = uint16(SecurityLifecycleSecuredMin)
@@ -55,8 +61,9 @@ var (
 		0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
 	}
-	testCertificationReference = "1234567890123"
-	testNonce                  = []byte{
+	testCertificationReferenceP1 = "1234567890123"
+	testCertificationReferenceP2 = "1234567890123-12345"
+	testNonce                    = []byte{
 		1, 1, 1, 1, 1, 1, 1, 1,
 		1, 1, 1, 1, 1, 1, 1, 1,
 		1, 1, 1, 1, 1, 1, 1, 1,
@@ -240,7 +247,7 @@ func validateNegatives(t *testing.T, profile string) {
 		// 10
 		{
 			fPath: "testvectors/json/test-hardware-version-invalid.json",
-			eStr:  `validating psa-certification-reference: wrong syntax for claim: MUST be in EAN-13 format`,
+			eStr:  `validating psa-certification-reference: wrong syntax for claim: MUST be in EAN-13`,
 		},
 		// 11
 		{
@@ -357,7 +364,7 @@ func validateNegatives(t *testing.T, profile string) {
 		require.Nil(t, err, "unable to load %s: %v", tc.fPath, err)
 
 		err = p.Validate()
-		assert.EqualError(t, err, tc.eStr, "failed TCase at index %d (%s)", i, tc.fPath)
+		assert.ErrorContains(t, err, tc.eStr, "failed TCase at index %d (%s)", i, tc.fPath)
 	}
 }
 

@@ -4,7 +4,7 @@
   "psa-security-lifecycle": 12288,
   "psa-implementation-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
   "psa-boot-seed": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
-  "psa-certification-reference": "1234567890123",
+  "psa-hwver": "1234567890123",
   "psa-software-components": [
     {
       "measurement-type": "BL",
@@ -19,5 +19,6 @@
   ],
   "psa-instance-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAh",
   "psa-verification-service-indicator": "https://psa-verifier.org",
-  "psa-profile": "PSA_IOT_PROFILE_1"
+  "psa-profile": "PSA_IOT_PROFILE_1",
+  "psa-certification-reference": "1234567890123-12345"
 }

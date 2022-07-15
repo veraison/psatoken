@@ -36,7 +36,7 @@ func mustBuildValidP2Claims(t *testing.T, includeOptional bool) IClaims {
 		err = c.SetBootSeed(testBootSeedMin)
 		require.NoError(t, err)
 
-		err = c.SetCertificationReference(testCertificationReference)
+		err = c.SetCertificationReference(testCertificationReferenceP2)
 		require.NoError(t, err)
 
 		err = c.SetVSI(testVSI)

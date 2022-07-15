@@ -6,13 +6,12 @@ package psatoken
 import (
 	_ "crypto/sha256" // used hash algorithms need to be imported explicitly
 	"fmt"
-	"strings"
+	"regexp"
 )
 
 const (
-	ImplIDLen                 = 32 // psa-implementation-id size (bytes .size 32)
-	InstIDLen                 = 33 // psa-instance-id size (bytes .size 33)
-	CertificationReferenceLen = 13 // psa-certification-reference length (EAN-13)
+	ImplIDLen = 32 // psa-implementation-id size (bytes .size 32)
+	InstIDLen = 33 // psa-instance-id size (bytes .size 33)
 )
 
 const (
@@ -43,6 +42,11 @@ const (
 	SecurityLifecycleRecoverablePsaRotDebugMax = 0x50ff
 	SecurityLifecycleDecommissionedMin         = 0x6000
 	SecurityLifecycleDecommissionedMax         = 0x60ff
+)
+
+var (
+	CertificationReferenceP1RE = regexp.MustCompile(`^[0-9]{13}$`)
+	CertificationReferenceP2RE = regexp.MustCompile(`^[0-9]{13}-[0-9]{5}$`)
 )
 
 func securityLifeCycleToString(v uint16) string {
@@ -130,15 +134,23 @@ func isValidBootSeed(v []byte, profile string) error {
 	return nil
 }
 
-func isValidCertificationReference(v string) error {
-	notDigit := func(c rune) bool { return c < '0' || c > '9' }
-
-	if len(v) != CertificationReferenceLen ||
-		strings.IndexFunc(v, notDigit) != -1 {
-		return fmt.Errorf(
-			"%w: MUST be in EAN-13 format",
-			ErrWrongClaimSyntax,
-		)
+func isValidCertificationReference(v, profile string) error {
+	switch profile {
+	case PsaProfile1:
+		if !CertificationReferenceP1RE.MatchString(v) &&
+			!CertificationReferenceP2RE.MatchString(v) {
+			return fmt.Errorf(
+				"%w: MUST be in EAN-13 or EAN-13+5 format",
+				ErrWrongClaimSyntax,
+			)
+		}
+	case PsaProfile2:
+		if !CertificationReferenceP2RE.MatchString(v) {
+			return fmt.Errorf(
+				"%w: MUST be in EAN-13+5 format",
+				ErrWrongClaimSyntax,
+			)
+		}
 	}
 
 	return nil
@@ -296,8 +308,8 @@ func getBootSeed(src *[]byte, profile string) ([]byte, error) {
 	return *src, nil
 }
 
-func setCertificationReference(dst **string, src *string) error {
-	if err := isValidCertificationReference(*src); err != nil {
+func setCertificationReference(dst **string, src *string, profile string) error {
+	if err := isValidCertificationReference(*src, profile); err != nil {
 		return err
 	}
 
@@ -306,12 +318,12 @@ func setCertificationReference(dst **string, src *string) error {
 	return nil
 }
 
-func getCertificationReference(src *string) (string, error) {
+func getCertificationReference(src *string, profile string) (string, error) {
 	if src == nil {
 		return "", ErrOptionalClaimMissing
 	}
 
-	if err := isValidCertificationReference(*src); err != nil {
+	if err := isValidCertificationReference(*src, profile); err != nil {
 		return "", err
 	}
 

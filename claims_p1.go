@@ -15,7 +15,7 @@ type P1Claims struct {
 	SecurityLifeCycle      *uint16        `cbor:"-75002,keyasint" json:"psa-security-lifecycle"`
 	ImplID                 *[]byte        `cbor:"-75003,keyasint" json:"psa-implementation-id"`
 	BootSeed               *[]byte        `cbor:"-75004,keyasint" json:"psa-boot-seed"`
-	CertificationReference *string        `cbor:"-75005,keyasint,omitempty" json:"psa-certification-reference,omitempty"`
+	CertificationReference *string        `cbor:"-75005,keyasint,omitempty" json:"psa-hwver,omitempty"`
 	SwComponents           *[]SwComponent `cbor:"-75006,keyasint,omitempty" json:"psa-software-components,omitempty"`
 	NoSwMeasurements       *uint          `cbor:"-75007,keyasint,omitempty" json:"psa-no-software-measurements,omitempty"`
 	Nonce                  *[]byte        `cbor:"-75008,keyasint" json:"psa-nonce"`
@@ -69,7 +69,7 @@ func (c *P1Claims) SetBootSeed(v []byte) error {
 }
 
 func (c *P1Claims) SetCertificationReference(v string) error {
-	return setCertificationReference(&c.CertificationReference, &v)
+	return setCertificationReference(&c.CertificationReference, &v, PsaProfile1)
 }
 
 // pass scs==nil to set the no-sw-measurements flag
@@ -175,7 +175,7 @@ func (c P1Claims) GetBootSeed() ([]byte, error) {
 }
 
 func (c P1Claims) GetCertificationReference() (string, error) {
-	return getCertificationReference(c.CertificationReference)
+	return getCertificationReference(c.CertificationReference, PsaProfile1)
 }
 
 // Caveat: this may return nil on success if psa-no-sw-measurement is asserted
