@@ -22,21 +22,21 @@ import (
 )
 
 var (
-	testECKeyMatched = `{
+	testECKeyA = `{
   "kty": "EC",
   "crv": "P-256",
   "x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
   "y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
   "d": "870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE"
 }`
-	testECKeyUnmatched = `{
+	testECKeyB = `{
   "kty": "EC",
   "crv": "P-256",
   "x": "MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqx7D4",
   "y": "4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
   "d": "870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE"
 }`
-	TFMECKey = `{
+	testTFMECKey = `{
   "kty": "EC",
   "crv": "P-256",
   "x": "eeupDov0UKZ1FXatRZmwet-TjaO7C9F9ADbtSaLQ_D8",

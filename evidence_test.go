@@ -14,7 +14,7 @@ import (
 )
 
 func TestEvidence_p1_sign_and_verify(t *testing.T) {
-	tokenSigner := signerFromJWK(t, testECKeyMatched)
+	tokenSigner := signerFromJWK(t, testECKeyA)
 
 	var EvidenceIn Evidence
 
@@ -31,14 +31,14 @@ func TestEvidence_p1_sign_and_verify(t *testing.T) {
 	err = EvidenceOut.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	pk := pubKeyFromJWK(t, testECKeyMatched)
+	pk := pubKeyFromJWK(t, testECKeyA)
 
 	err = EvidenceOut.Verify(pk)
 	assert.NoError(t, err, "verification failed")
 }
 
 func TestEvidence_p2_sign_and_verify(t *testing.T) {
-	tokenSigner := signerFromJWK(t, testECKeyMatched)
+	tokenSigner := signerFromJWK(t, testECKeyA)
 
 	var EvidenceIn Evidence
 
@@ -55,7 +55,7 @@ func TestEvidence_p2_sign_and_verify(t *testing.T) {
 	err = EvidenceOut.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	pk := pubKeyFromJWK(t, testECKeyMatched)
+	pk := pubKeyFromJWK(t, testECKeyA)
 
 	err = EvidenceOut.Verify(pk)
 	assert.NoError(t, err, "verification failed")
@@ -89,7 +89,7 @@ b4016b312cc90fa0d629909eda28ed28013dfc71d8d33271
 	err := e.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	pk := pubKeyFromJWK(t, TFMECKey)
+	pk := pubKeyFromJWK(t, testTFMECKey)
 
 	err = e.Verify(pk)
 	assert.NoError(t, err, "verification failed")
@@ -124,7 +124,7 @@ e7f48a5eead228c5
 	err := e.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	pk := pubKeyFromJWK(t, TFMECKey)
+	pk := pubKeyFromJWK(t, testTFMECKey)
 
 	err = e.Verify(pk)
 	assert.NoError(t, err, "verification failed")
@@ -235,7 +235,7 @@ func TestEvidence_Verify_no_message(t *testing.T) {
 }
 
 func TestEvidence_sign_and_verify_key_mismatch(t *testing.T) {
-	tokenSigner := signerFromJWK(t, testECKeyMatched)
+	tokenSigner := signerFromJWK(t, testECKeyA)
 
 	var EvidenceIn Evidence
 
@@ -252,13 +252,13 @@ func TestEvidence_sign_and_verify_key_mismatch(t *testing.T) {
 	err = EvidenceOut.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	pk := pubKeyFromJWK(t, testECKeyUnmatched)
+	pk := pubKeyFromJWK(t, testECKeyB)
 	err = EvidenceOut.Verify(pk)
 	assert.EqualError(t, err, "verification error")
 }
 
 func TestEvidence_sign_and_verify_alg_mismatch(t *testing.T) {
-	tokenSigner := signerFromJWK(t, testECKeyMatched)
+	tokenSigner := signerFromJWK(t, testECKeyA)
 
 	var EvidenceIn Evidence
 
