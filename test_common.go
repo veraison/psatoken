@@ -147,13 +147,14 @@ func getAlgAndKeyFromJWK(t *testing.T, j string) (cose.Algorithm, crypto.Signer)
 	ks, err := jwk.ParseString(j)
 	require.Nil(t, err)
 
-	var key crypto.Signer
+	var (
+		key crypto.Signer
+		crv elliptic.Curve
+		alg cose.Algorithm
+	)
 
 	err = ks.Keys[0].Raw(&key)
 	require.Nil(t, err)
-
-	var crv elliptic.Curve
-	var alg cose.Algorithm
 
 	switch v := key.(type) {
 	case *ecdsa.PrivateKey:
