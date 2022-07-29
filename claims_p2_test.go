@@ -4,6 +4,7 @@
 package psatoken
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -213,4 +214,103 @@ func Test_P2Claims_SetSecurityLifecycle_invalid(t *testing.T) {
 
 	err = c.SetSecurityLifeCycle(0xffff)
 	assert.EqualError(t, err, expectedErr)
+}
+
+func Test_P2Claims_FromJSON_positives(t *testing.T) {
+	tvs := []string{
+		/* 0 */ "testvectors/json/test-token-valid-full.json",
+		/* 1 */ "testvectors/json/test-token-valid-minimalist-p2.json",
+		/* 2 */ "testvectors/json/test-boot-seed-invalid-missing.json", // missing boot seed ok for P2
+	}
+
+	for i, fn := range tvs {
+		buf, err := os.ReadFile(fn)
+		require.NoError(t, err)
+
+		var claimsSet P2Claims
+
+		err = claimsSet.FromJSON(buf)
+		assert.NoError(t, err, "test vector %d failed", i)
+	}
+}
+
+func Test_P2Claims_FromJSON_negatives(t *testing.T) {
+	tvs := []string{
+		/* 0 */ "testvectors/json/test-boot-seed-invalid-long.json",
+		/* 1 */ "testvectors/json/test-token-valid-minimalist-no-sw-measurements.json",
+		/* 2 */ "testvectors/json/test-boot-seed-invalid-short.json",
+		/* 3 */ "testvectors/json/test-client-id-invalid-missing.json",
+		/* 4 */ "testvectors/json/test-hardware-version-invalid.json",
+		/* 5 */ "testvectors/json/test-implementation-id-invalid-long.json",
+		/* 6 */ "testvectors/json/test-implementation-id-invalid-missing.json",
+		/* 7 */ "testvectors/json/test-implementation-id-invalid-short.json",
+		/* 8 */ "testvectors/json/test-instance-id-invalid-euid-type.json",
+		/* 9 */ "testvectors/json/test-instance-id-invalid-long.json",
+		/* 10 */ "testvectors/json/test-instance-id-invalid-missing.json",
+		/* 11 */ "testvectors/json/test-instance-id-invalid-short.json",
+		/* 12 */ "testvectors/json/test-nonce-invalid-long.json",
+		/* 13 */ "testvectors/json/test-nonce-invalid-missing.json",
+		/* 14 */ "testvectors/json/test-nonce-invalid-short.json",
+		/* 15 */ "testvectors/json/test-profile-invalid-unknown.json",
+		/* 16 */ "testvectors/json/test-security-lifecycle-invalid-missing.json",
+		/* 17 */ "testvectors/json/test-security-lifecycle-invalid-state.json",
+		/* 18 */ "testvectors/json/test-sw-component-and-no-sw-measurements-missing.json",
+		/* 19 */ "testvectors/json/test-sw-component-measurement-value-invalid-missing.json",
+		/* 20 */ "testvectors/json/test-sw-component-measurement-value-invalid-short.json",
+		/* 21 */ "testvectors/json/test-sw-component-signer-id-invalid-missing.json",
+		/* 22 */ "testvectors/json/test-sw-component-signer-id-invalid-short.json",
+		/* 23 */ "testvectors/json/test-sw-components-empty.json",
+		/* 24 */ "testvectors/json/test-sw-components-invalid-combo.json",
+		/* 25 */ "testvectors/json/test-sw-components-invalid-missing.json",
+		/* 26 */ "testvectors/json/test-vsi-invalid-empty.json",
+		/* 27 */ "testvectors/json/test-profile-invalid-missing.json", // missing profile defaults to P1
+		/* 28 */ "testvectors/json/test-profile-valid-missing.json",
+	}
+
+	for i, fn := range tvs {
+		buf, err := os.ReadFile(fn)
+		require.NoError(t, err)
+
+		var claimsSet P2Claims
+
+		err = claimsSet.FromJSON(buf)
+		assert.Error(t, err, "test vector %d failed", i)
+	}
+}
+
+func TestP2Claims_FromJSON_invalid_json(t *testing.T) {
+	tv := testNotJSON
+
+	expectedErr := `JSON decoding of PSA claims failed: unexpected end of JSON input`
+
+	var c P2Claims
+
+	err := c.FromJSON(tv)
+	assert.EqualError(t, err, expectedErr)
+}
+
+func Test_P2Claims_ToJSON_ok(t *testing.T) {
+	c := mustBuildValidP2Claims(t, true)
+
+	expected := `{
+	"eat-profile": "http://arm.com/psa/2.0.0",
+	"psa-client-id": 2147483647,
+	"psa-security-lifecycle": 12288,
+	"psa-implementation-id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+	"psa-boot-seed": "AAAAAAAAAAA=",
+	"psa-certification-reference": "1234567890123-12345",
+	"psa-software-components": [
+	  {
+		"measurement-value": "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=",
+		"signer-id": "BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ="
+	  }
+	],
+	"psa-nonce": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",
+	"psa-instance-id": "AQICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC",
+	"psa-verification-service-indicator": "https://veraison.example/v1/challenge-response"	
+}`
+
+	actual, err := c.ToJSON()
+	assert.NoError(t, err)
+	assert.JSONEq(t, expected, string(actual))
 }

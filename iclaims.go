@@ -38,6 +38,10 @@ type IClaims interface {
 	FromCBOR([]byte) error
 	ToCBOR() ([]byte, error)
 
+	// JSON codecs
+	FromJSON([]byte) error
+	ToJSON() ([]byte, error)
+
 	// Semantic validation
 	Validate() error
 }
@@ -70,6 +74,24 @@ func DecodeClaims(buf []byte) (IClaims, error) {
 	}
 
 	return nil, fmt.Errorf("decode failed for both p1 (%v) and p2 (%v)", err1, err2)
+}
+
+func DecodeJSONClaims(buf []byte) (IClaims, error) {
+	p2 := &P2Claims{}
+
+	err2 := p2.FromJSON(buf)
+	if err2 == nil {
+		return p2, nil
+	}
+
+	p1 := &P1Claims{}
+
+	err1 := p1.FromJSON(buf)
+	if err1 == nil {
+		return p1, nil
+	}
+
+	return nil, fmt.Errorf("JSON decode failed for both p1 (%v) and p2 (%v)", err1, err2)
 }
 
 func validate(c IClaims, profile string) error {
