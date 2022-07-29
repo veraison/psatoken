@@ -335,13 +335,3 @@ func Test_P1Claims_ToJSON_ok(t *testing.T) {
 	assert.NoError(t, err)
 	assert.JSONEq(t, expected, string(actual))
 }
-
-func Test_P1Claims_ToJSON_invalid(t *testing.T) {
-	c, err := NewClaims(PsaProfile1)
-	require.NoError(t, err)
-
-	expectedErr := `validation of PSA claims failed: validating psa-client-id: missing mandatory claim`
-
-	_, err = c.ToJSON()
-	assert.EqualError(t, err, expectedErr)
-}
