@@ -43,6 +43,7 @@ var (
   "y": "v836iVa1aL_bhnPmSNi1jZKZVbFKJsMIDzQRfZcdaGQ",
   "d": "qbRUsm1vkKTqMRk1ZMupH-xvmgAqfcBQS5Khk3E0WF8"
  }`
+	testNotJSON                  = []byte(`{`)
 	testNotCBOR                  = `6e6f745f63626f720a`
 	testClientIDSPE              = int32(2147483647)
 	testSecurityLifecycleSecured = uint16(SecurityLifecycleSecuredMin)

@@ -5,6 +5,7 @@ package psatoken
 
 import (
 	_ "crypto/sha256" // used hash algorithms need to be imported explicitly
+	"encoding/json"
 	"fmt"
 
 	"github.com/veraison/eat"
@@ -142,6 +143,34 @@ func (c P2Claims) ToCBOR() ([]byte, error) {
 	buf, err := em.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("CBOR encoding of PSA claims failed: %w", err)
+	}
+
+	return buf, nil
+}
+
+func (c *P2Claims) FromJSON(buf []byte) error {
+	err := json.Unmarshal(buf, c)
+	if err != nil {
+		return fmt.Errorf("JSON decoding of PSA claims failed: %w", err)
+	}
+
+	err = c.Validate()
+	if err != nil {
+		return fmt.Errorf("validation of PSA claims failed: %w", err)
+	}
+
+	return nil
+}
+
+func (c P2Claims) ToJSON() ([]byte, error) {
+	err := c.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
+	}
+
+	buf, err := json.Marshal(&c)
+	if err != nil {
+		return nil, fmt.Errorf("JSON encoding of PSA claims failed: %w", err)
 	}
 
 	return buf, nil

@@ -4,6 +4,7 @@
 package psatoken
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -212,4 +213,38 @@ func Test_IClaims_SetSoftwareComponents_invalid(t *testing.T) {
 		err := c.SetSoftwareComponents(scs)
 		assert.EqualError(t, err, expectedErr)
 	}
+}
+
+func Test_ToJSON_invalid(t *testing.T) {
+	for _, p := range []string{PsaProfile1, PsaProfile2} {
+		c, err := NewClaims(p)
+		require.NoError(t, err)
+
+		expectedErr := `validation of PSA claims failed: validating psa-client-id: missing mandatory claim`
+
+		_, err = c.ToJSON()
+		assert.EqualError(t, err, expectedErr)
+	}
+}
+
+func Test_DecodeJSONClaims_P2(t *testing.T) {
+	buf, err := os.ReadFile("testvectors/json/test-token-valid-minimalist-p2.json")
+	require.NoError(t, err)
+
+	c, err := DecodeJSONClaims(buf)
+	assert.NoError(t, err)
+	actualProfile, err := c.GetProfile()
+	assert.NoError(t, err)
+	assert.Equal(t, PsaProfile2, actualProfile)
+}
+
+func Test_DecodeJSONClaims_P1(t *testing.T) {
+	buf, err := os.ReadFile("testvectors/json/test-token-valid-minimalist-p1.json")
+	require.NoError(t, err)
+
+	c, err := DecodeJSONClaims(buf)
+	assert.NoError(t, err)
+	actualProfile, err := c.GetProfile()
+	assert.NoError(t, err)
+	assert.Equal(t, PsaProfile1, actualProfile)
 }
