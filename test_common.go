@@ -161,8 +161,10 @@ func getAlgAndKeyFromJWK(t *testing.T, j string) (cose.Algorithm, crypto.Signer)
 		alg cose.Algorithm
 	)
 
-	err = ks.Keys[0].Raw(&key)
-	require.Nil(t, err)
+	k, ok := ks.Get(0)
+	require.True(t, ok)
+	err = k.Raw(&key)
+	require.NoError(t, err)
 
 	switch v := key.(type) {
 	case *ecdsa.PrivateKey:
