@@ -178,7 +178,7 @@ func TestEvidence_FromCOSE_bad_claims_unknown_profile(t *testing.T) {
 
 	err := e.FromCOSE(tv)
 
-	expectedErr := `failed CBOR decoding of PSA claims: decode failed for both p1 (validation of PSA claims failed: validating psa-client-id: missing mandatory claim) and p2 (validation of PSA claims failed: wrong profile: expecting "http://arm.com/psa/2.0.0", got "http://arm.com/psa/3.0.0")`
+	expectedErr := `failed CBOR decoding of PSA claims: decode failed for both p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: wrong profile: expecting "http://arm.com/psa/2.0.0", got "http://arm.com/psa/3.0.0")`
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -189,7 +189,7 @@ func TestEvidence_SetClaims_unknown_profile(t *testing.T) {
 
 	err := evidence.SetClaims(emptyClaims)
 
-	assert.EqualError(t, err, "validation failed: validating psa-client-id: missing mandatory claim")
+	assert.EqualError(t, err, "validation failed: validating psa-security-lifecycle: missing mandatory claim")
 }
 
 func TestEvidence_SetClaims_validation_failed(t *testing.T) {
@@ -200,7 +200,7 @@ func TestEvidence_SetClaims_validation_failed(t *testing.T) {
 
 	err = evidence.SetClaims(tv)
 
-	assert.EqualError(t, err, "validation failed: validating psa-client-id: missing mandatory claim")
+	assert.EqualError(t, err, "validation failed: validating psa-security-lifecycle: missing mandatory claim")
 }
 
 func TestEvidence_SetClaims_ok(t *testing.T) {

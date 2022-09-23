@@ -25,6 +25,12 @@ const (
 	// which uses EAT claims where possible
 	// nolint
 	PsaProfile2 = "http://arm.com/psa/2.0.0"
+
+	// CcaProfile is the new profile as defined in
+	// RMM Monitor Specfication, which uses EAT claims
+	// where possible
+	// nolint
+	CcaProfile = "http://arm.com/CCA-SSD/1.0.0"
 )
 
 const (
@@ -44,12 +50,33 @@ const (
 	SecurityLifecycleDecommissionedMax         = 0x60ff
 )
 
+const (
+	CcaPlatformLifecycleUnknownMin                     = 0x0000
+	CcaPlatformLifecycleUnknownMax                     = 0x00ff
+	CcaPlatformLifecycleAssemblyAndTestMin             = 0x1000
+	CcaPlatformLifecycleAssemblyAndTestMax             = 0x10ff
+	CcaPlatformLifecycleRotProvisioningMin             = 0x2000
+	CcaPlatformLifecycleRotProvisioningMax             = 0x20ff
+	CcaPlatformLifecycleSecuredMin                     = 0x3000
+	CcaPlatformLifecycleSecuredMax                     = 0x30ff
+	CcaPlatformLifecycleNonCcaPlatformDebugMin         = 0x4000
+	CcaPlatformLifecycleNonCcaPlatformDebugMax         = 0x40ff
+	CcaPlatformLifecycleRecoverableCcaPlatformDebugMin = 0x5000
+	CcaPlatformLifecycleRecoverableCcaPlatformDebugMax = 0x50ff
+	CcaPlatformLifecycleDecommissionedMin              = 0x6000
+	CcaPlatformLifecycleDecommissionedMax              = 0x60ff
+)
+
+const (
+	Invalid = "invalid"
+)
+
 var (
 	CertificationReferenceP1RE = regexp.MustCompile(`^[0-9]{13}$`)
 	CertificationReferenceP2RE = regexp.MustCompile(`^[0-9]{13}-[0-9]{5}$`)
 )
 
-func securityLifeCycleToString(v uint16) string {
+func checkP1P2secLifeCycle(v uint16) string {
 	if v >= SecurityLifecycleUnknownMin &&
 		v <= SecurityLifecycleUnknownMax {
 		return "unknown"
@@ -84,14 +111,62 @@ func securityLifeCycleToString(v uint16) string {
 		v <= SecurityLifecycleDecommissionedMax {
 		return "decommissioned"
 	}
-
-	return "invalid"
+	return Invalid
 }
 
-func isValidSecurityLifeCycle(v uint16) error {
+func checkCcaLifeCycle(v uint16) string {
+	if v >= CcaPlatformLifecycleUnknownMin &&
+		v <= CcaPlatformLifecycleUnknownMax {
+		return "unknown"
+	}
+
+	if v >= CcaPlatformLifecycleAssemblyAndTestMin &&
+		v <= CcaPlatformLifecycleAssemblyAndTestMax {
+		return "assembly-and-test"
+	}
+
+	if v >= CcaPlatformLifecycleRotProvisioningMin &&
+		v <= CcaPlatformLifecycleRotProvisioningMax {
+		return "cca-platform-rot-provisioning"
+	}
+
+	if v >= CcaPlatformLifecycleSecuredMin &&
+		v <= CcaPlatformLifecycleSecuredMax {
+		return "secured"
+	}
+
+	if v >= CcaPlatformLifecycleNonCcaPlatformDebugMin &&
+		v <= CcaPlatformLifecycleNonCcaPlatformDebugMax {
+		return "non-cca-platform-rot-debug"
+	}
+
+	if v >= CcaPlatformLifecycleRecoverableCcaPlatformDebugMin &&
+		v <= CcaPlatformLifecycleRecoverableCcaPlatformDebugMax {
+		return "recoverable-cca-platform-rot-debug"
+	}
+
+	if v >= CcaPlatformLifecycleDecommissionedMin &&
+		v <= CcaPlatformLifecycleDecommissionedMax {
+		return "decommissioned"
+	}
+	return Invalid
+}
+
+func securityLifeCycleToString(v uint16, profile string) string {
+
+	switch profile {
+	case PsaProfile1, PsaProfile2:
+		return checkP1P2secLifeCycle(v)
+	case CcaProfile:
+		return checkCcaLifeCycle(v)
+	}
+	return Invalid
+}
+
+func isValidSecurityLifeCycle(v uint16, profile string) error {
 	// Accept any security lifecycle in the state machine, including values that
 	// can't produce trustable PSA evidence.
-	if securityLifeCycleToString(v) == "invalid" {
+	if securityLifeCycleToString(v, profile) == "invalid" {
 		return fmt.Errorf("%w: value %d is invalid", ErrWrongClaimSyntax, v)
 	}
 
@@ -198,6 +273,19 @@ func isValidVSI(v string) error {
 	return nil
 }
 
+func isValidHashAlgID(v string) error {
+	if v == "" {
+		return fmt.Errorf("%w: empty string", ErrWrongClaimSyntax)
+	}
+
+	// It is recommended that IANA Hash Function Textual Names be used for setting HashAlgID
+	switch v {
+	case "md2", "md5", "sha-1", "sha-224", "sha-256", "sha-384", "sha-512", "shake128", "shake256":
+		return nil
+	}
+	return fmt.Errorf("%w: wrong syntax", ErrWrongClaimSyntax)
+}
+
 func isValidSwComponents(scs []SwComponent) error {
 	if len(scs) == 0 {
 		return fmt.Errorf("%w: there MUST be at least one entry", ErrWrongClaimSyntax)
@@ -234,8 +322,8 @@ func getClientID(src *int32) (int32, error) {
 	return *src, nil
 }
 
-func setSecurityLifeCycle(dst **uint16, src *uint16) error {
-	if err := isValidSecurityLifeCycle(*src); err != nil {
+func setSecurityLifeCycle(dst **uint16, src *uint16, profile string) error {
+	if err := isValidSecurityLifeCycle(*src, profile); err != nil {
 		return err
 	}
 
@@ -244,12 +332,12 @@ func setSecurityLifeCycle(dst **uint16, src *uint16) error {
 	return nil
 }
 
-func getSecurityLifeCycle(src *uint16) (uint16, error) {
+func getSecurityLifeCycle(src *uint16, profile string) (uint16, error) {
 	if src == nil {
 		return 0, ErrMandatoryClaimMissing
 	}
 
-	if err := isValidSecurityLifeCycle(*src); err != nil {
+	if err := isValidSecurityLifeCycle(*src, profile); err != nil {
 		return 0, err
 	}
 

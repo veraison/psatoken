@@ -72,11 +72,36 @@ func Test_P2Claims_Validate_mandatory_only_claims(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func Test_P2Claims_Set_NonValid_Claims(t *testing.T) {
+	var c P2Claims
+
+	err := c.SetConfig([]byte("123"))
+	expectedErr := "invalid SetConfig invoked on p2 claims"
+	assert.EqualError(t, err, expectedErr)
+
+	err = c.SetHashAlgID("sha-256")
+	expectedErr = "invalid SetHashAlgID invoked on p2 claims"
+	assert.EqualError(t, err, expectedErr)
+
+}
+
+func Test_P2Claims_Get_NonValid_Claims(t *testing.T) {
+	var c P2Claims
+
+	_, err := c.GetConfig()
+	expectedErr := "invalid GetConfig invoked on p2 claims"
+	assert.EqualError(t, err, expectedErr)
+
+	_, err = c.GetHashAlgID()
+	expectedErr = "invalid GetHashAlgID invoked on p2 claims"
+	assert.EqualError(t, err, expectedErr)
+}
+
 func Test_P2Claims_ToCBOR_invalid(t *testing.T) {
 	c, err := newP2Claims()
 	require.NoError(t, err)
 
-	expectedErr := `validation of PSA claims failed: validating psa-client-id: missing mandatory claim`
+	expectedErr := `validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim`
 
 	_, err = c.ToCBOR()
 

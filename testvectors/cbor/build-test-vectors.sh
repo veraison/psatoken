@@ -17,6 +17,10 @@ DIAG_FILES="${DIAG_FILES} P2ClaimsMissingMandatoryNonce"
 DIAG_FILES="${DIAG_FILES} P2ClaimsInvalidMultiNonce"
 DIAG_FILES="${DIAG_FILES} P1ClaimsTFM"
 DIAG_FILES="${DIAG_FILES} P2ClaimsTFM"
+DIAG_FILES="${DIAG_FILES} CcaPlatformClaimsAll"
+DIAG_FILES="${DIAG_FILES} CcaPlatformClaimsInvalidMultiNonce"
+DIAG_FILES="${DIAG_FILES} CcaPlatformClaimsMandatoryOnly"
+DIAG_FILES="${DIAG_FILES} CcaPlatformClaimsMissingMandatoryNonce"
 
 TV_DOT_GO=${TV_DOT_GO?must be set in the environment.}
 
