@@ -27,7 +27,7 @@ const (
 	PsaProfile2 = "http://arm.com/psa/2.0.0"
 
 	// CcaProfile is the new profile as defined in
-	// RMM Monitor Specfication, which uses EAT claims
+	// RMM Monitor Specification, which uses EAT claims
 	// where possible
 	// nolint
 	CcaProfile = "http://arm.com/CCA-SSD/1.0.0"

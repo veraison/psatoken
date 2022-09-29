@@ -271,11 +271,9 @@ func (c P2Claims) GetVSI() (string, error) {
 }
 
 func (c P2Claims) GetConfig() ([]byte, error) {
-
 	return nil, fmt.Errorf("invalid GetConfig invoked on p2 claims")
 }
 
 func (c P2Claims) GetHashAlgID() (string, error) {
-
 	return "", fmt.Errorf("invalid GetHashAlgID invoked on p2 claims")
 }

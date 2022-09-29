@@ -82,7 +82,6 @@ func Test_P2Claims_Set_NonValid_Claims(t *testing.T) {
 	err = c.SetHashAlgID("sha-256")
 	expectedErr = "invalid SetHashAlgID invoked on p2 claims"
 	assert.EqualError(t, err, expectedErr)
-
 }
 
 func Test_P2Claims_Get_NonValid_Claims(t *testing.T) {

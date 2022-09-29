@@ -4,8 +4,7 @@ This is a compliant implementation of three specifications:
 
 * [draft-tschofenig-rats-psa-token-07](https://datatracker.ietf.org/doc/html/draft-tschofenig-rats-psa-token-07) (`PSA_IOT_PROFILE_1`), and 
 * [draft-tschofenig-rats-psa-token-09](https://datatracker.ietf.org/doc/html/draft-tschofenig-rats-psa-token-09) (`http://arm.com/psa/2.0.0`)
-
-* Realm Management Monitor Specificiation [RMM Spec](https://developer.arm.com/documentation/den0137/a/?lang=en)
+* Realm Management Monitor Specificiation [RMM Spec](https://developer.arm.com/documentation/den0137/latest)
 
 The package exposes the following functionalities:
 

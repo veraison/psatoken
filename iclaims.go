@@ -159,7 +159,6 @@ func validate(c IClaims, profile string) error {
 		}
 
 	case CcaProfile:
-
 		// config is mandatory in CCA
 		if _, err := c.GetConfig(); err != nil {
 			return fmt.Errorf("validating cca-platform-config: %w", err)
@@ -168,7 +167,6 @@ func validate(c IClaims, profile string) error {
 		// hash algo id is mandatory in CCA
 		if _, err := c.GetHashAlgID(); err != nil {
 			return fmt.Errorf("validating cca-platform-hash-algo-id: %w", err)
-
 		}
 	}
 	return nil
