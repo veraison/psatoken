@@ -61,7 +61,7 @@ func (c *P2Claims) SetClientID(v int32) error {
 }
 
 func (c *P2Claims) SetSecurityLifeCycle(v uint16) error {
-	return setSecurityLifeCycle(&c.SecurityLifeCycle, &v)
+	return setSecurityLifeCycle(&c.SecurityLifeCycle, &v, PsaProfile2)
 }
 
 func (c *P2Claims) SetImplID(v []byte) error {
@@ -116,6 +116,14 @@ func (c *P2Claims) SetInstID(v []byte) error {
 
 func (c *P2Claims) SetVSI(v string) error {
 	return setVSI(&c.VSI, &v)
+}
+
+func (c *P2Claims) SetConfig(v []byte) error {
+	return fmt.Errorf("invalid SetConfig invoked on p2 claims")
+}
+
+func (c *P2Claims) SetHashAlgID(v string) error {
+	return fmt.Errorf("invalid SetHashAlgID invoked on p2 claims")
 }
 
 // Codecs
@@ -194,7 +202,7 @@ func (c P2Claims) GetClientID() (int32, error) {
 }
 
 func (c P2Claims) GetSecurityLifeCycle() (uint16, error) {
-	return getSecurityLifeCycle(c.SecurityLifeCycle)
+	return getSecurityLifeCycle(c.SecurityLifeCycle, PsaProfile2)
 }
 
 func (c P2Claims) GetImplID() ([]byte, error) {
@@ -260,4 +268,12 @@ func (c P2Claims) GetInstID() ([]byte, error) {
 
 func (c P2Claims) GetVSI() (string, error) {
 	return getVSI(c.VSI)
+}
+
+func (c P2Claims) GetConfig() ([]byte, error) {
+	return nil, fmt.Errorf("invalid GetConfig invoked on p2 claims")
+}
+
+func (c P2Claims) GetHashAlgID() (string, error) {
+	return "", fmt.Errorf("invalid GetHashAlgID invoked on p2 claims")
 }

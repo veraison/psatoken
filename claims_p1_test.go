@@ -79,6 +79,31 @@ func Test_P1Claims_Validate_all_claims(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func Test_P1Claims_Set_NonValid_Claims(t *testing.T) {
+	var c P1Claims
+
+	err := c.SetConfig([]byte("123"))
+	expectedErr := "invalid SetConfig invoked on p1 claims"
+	assert.EqualError(t, err, expectedErr)
+
+	err = c.SetHashAlgID("sha-256")
+	expectedErr = "invalid SetHashAlgID invoked on p1 claims"
+	assert.EqualError(t, err, expectedErr)
+
+}
+
+func Test_P1Claims_Get_NonValid_Claims(t *testing.T) {
+	var c P1Claims
+
+	_, err := c.GetConfig()
+	expectedErr := "invalid GetConfig invoked on p1 claims"
+	assert.EqualError(t, err, expectedErr)
+
+	_, err = c.GetHashAlgID()
+	expectedErr = "invalid GetHashAlgID invoked on p1 claims"
+	assert.EqualError(t, err, expectedErr)
+}
+
 func Test_P1Claims_Validate_mandatory_only_claims(t *testing.T) {
 	c := mustBuildValidP1Claims(t, false, false)
 
@@ -97,7 +122,7 @@ func Test_P1Claims_ToCBOR_invalid(t *testing.T) {
 	c, err := newP1Claims(false)
 	require.NoError(t, err)
 
-	expectedErr := `validation of PSA claims failed: validating psa-client-id: missing mandatory claim`
+	expectedErr := `validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim`
 
 	_, err = c.ToCBOR()
 

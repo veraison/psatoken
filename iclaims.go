@@ -22,6 +22,8 @@ type IClaims interface {
 	GetNonce() ([]byte, error)
 	GetInstID() ([]byte, error)
 	GetVSI() (string, error)
+	GetConfig() ([]byte, error)
+	GetHashAlgID() (string, error)
 
 	// Setters
 	SetClientID(int32) error
@@ -33,6 +35,8 @@ type IClaims interface {
 	SetNonce([]byte) error
 	SetInstID([]byte) error
 	SetVSI(string) error
+	SetConfig([]byte) error
+	SetHashAlgID(string) error
 
 	// CBOR codecs
 	FromCBOR([]byte) error
@@ -104,11 +108,6 @@ func validate(c IClaims, profile string) error {
 		return fmt.Errorf("%w: expecting %q, got %q", ErrWrongProfile, profile, p)
 	}
 
-	// client id
-	if _, err := c.GetClientID(); err != nil {
-		return fmt.Errorf("validating psa-client-id: %w", err)
-	}
-
 	// security lifecycle
 	if _, err := c.GetSecurityLifeCycle(); err != nil {
 		return fmt.Errorf("validating psa-security-lifecycle: %w", err)
@@ -117,19 +116,6 @@ func validate(c IClaims, profile string) error {
 	// implementation id
 	if _, err := c.GetImplID(); err != nil {
 		return fmt.Errorf("validating psa-implementation-id: %w", err)
-	}
-
-	// boot seed is optional in P2
-	if _, err := c.GetBootSeed(); err != nil {
-		if profile != PsaProfile2 ||
-			(profile == PsaProfile2 && !errors.Is(err, ErrOptionalClaimMissing)) {
-			return fmt.Errorf("validating psa-boot-seed: %w", err)
-		}
-	}
-
-	// certification reference is optional
-	if _, err := c.GetCertificationReference(); err != nil && !errors.Is(err, ErrOptionalClaimMissing) {
-		return fmt.Errorf("validating psa-certification-reference: %w", err)
 	}
 
 	// sw components
@@ -152,5 +138,36 @@ func validate(c IClaims, profile string) error {
 		return fmt.Errorf("validating psa-verification-service-indicator: %w", err)
 	}
 
+	switch profile {
+	case PsaProfile1, PsaProfile2:
+		// client id
+		if _, err := c.GetClientID(); err != nil {
+			return fmt.Errorf("validating psa-client-id: %w", err)
+		}
+
+		// boot seed is optional in P2
+		if _, err := c.GetBootSeed(); err != nil {
+			if profile != PsaProfile2 ||
+				(profile == PsaProfile2 && !errors.Is(err, ErrOptionalClaimMissing)) {
+				return fmt.Errorf("validating psa-boot-seed: %w", err)
+			}
+		}
+
+		// certification reference is optional
+		if _, err := c.GetCertificationReference(); err != nil && !errors.Is(err, ErrOptionalClaimMissing) {
+			return fmt.Errorf("validating psa-certification-reference: %w", err)
+		}
+
+	case CcaProfile:
+		// config is mandatory in CCA
+		if _, err := c.GetConfig(); err != nil {
+			return fmt.Errorf("validating cca-platform-config: %w", err)
+		}
+
+		// hash algo id is mandatory in CCA
+		if _, err := c.GetHashAlgID(); err != nil {
+			return fmt.Errorf("validating cca-platform-hash-algo-id: %w", err)
+		}
+	}
 	return nil
 }

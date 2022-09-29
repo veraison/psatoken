@@ -47,6 +47,9 @@ var (
 	testNotCBOR                  = `6e6f745f63626f720a`
 	testClientIDSPE              = int32(2147483647)
 	testSecurityLifecycleSecured = uint16(SecurityLifecycleSecuredMin)
+	testCcaLifeCycleSecured      = uint16(12288)
+	testConfig                   = []byte{1, 2, 3}
+	testHashAlgID                = "sha-256"
 	testImplementationID         = []byte{
 		0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,

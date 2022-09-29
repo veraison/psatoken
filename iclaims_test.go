@@ -75,7 +75,7 @@ func Test_DecodeClaims_p2_failure(t *testing.T) {
 		buf := mustHexDecode(t, tv)
 		_, err := DecodeClaims(buf)
 
-		expectedError := `decode failed for both p1 (validation of PSA claims failed: validating psa-client-id: missing mandatory claim) and p2 (validation of PSA claims failed: validating psa-nonce: missing mandatory claim)`
+		expectedError := `decode failed for both p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: validating psa-nonce: missing mandatory claim)`
 
 		assert.EqualError(t, err, expectedError)
 	}
@@ -220,7 +220,7 @@ func Test_ToJSON_invalid(t *testing.T) {
 		c, err := NewClaims(p)
 		require.NoError(t, err)
 
-		expectedErr := `validation of PSA claims failed: validating psa-client-id: missing mandatory claim`
+		expectedErr := `validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim`
 
 		_, err = c.ToJSON()
 		assert.EqualError(t, err, expectedErr)
