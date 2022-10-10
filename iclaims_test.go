@@ -41,7 +41,7 @@ func Test_DecodeClaims_p1_failure(t *testing.T) {
 		buf := mustHexDecode(t, tv)
 		_, err := DecodeClaims(buf)
 
-		expectedError := `decode failed for both p1 (validation of PSA claims failed: validating psa-nonce: missing mandatory claim) and p2 (validation of PSA claims failed: validating profile: missing mandatory claim)`
+		expectedError := `decode failed for all CcaPlatform(validation of CCA platform claims failed: validating profile: missing mandatory claim), p1 (validation of PSA claims failed: validating psa-nonce: missing mandatory claim) and p2 (validation of PSA claims failed: validating profile: missing mandatory claim)`
 
 		assert.EqualError(t, err, expectedError)
 	}
@@ -75,7 +75,40 @@ func Test_DecodeClaims_p2_failure(t *testing.T) {
 		buf := mustHexDecode(t, tv)
 		_, err := DecodeClaims(buf)
 
-		expectedError := `decode failed for both p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: validating psa-nonce: missing mandatory claim)`
+		expectedError := `decode failed for all CcaPlatform(validation of CCA platform claims failed: wrong profile: expecting "http://arm.com/CCA-SSD/1.0.0", got "http://arm.com/psa/2.0.0"), p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: validating psa-nonce: missing mandatory claim)`
+
+		assert.EqualError(t, err, expectedError)
+	}
+}
+
+func Test_DecodeClaims_CcaPlatform_ok(t *testing.T) {
+	tvs := []string{
+		testEncodedCcaPlatformClaimsAll,
+		testEncodedCcaPlatformClaimsMandatoryOnly,
+	}
+
+	for _, tv := range tvs {
+		buf := mustHexDecode(t, tv)
+		c, err := DecodeClaims(buf)
+
+		assert.NoError(t, err)
+
+		actualProfile, err := c.GetProfile()
+		assert.NoError(t, err)
+		assert.Equal(t, CcaProfile, actualProfile)
+	}
+}
+
+func Test_DecodeClaims_CcaPlatform_failure(t *testing.T) {
+	tvs := []string{
+		testEncodedCcaPlatformClaimsMissingMandatoryNonce,
+	}
+
+	for _, tv := range tvs {
+		buf := mustHexDecode(t, tv)
+		_, err := DecodeClaims(buf)
+
+		expectedError := `decode failed for all CcaPlatform(validation of CCA platform claims failed: validating psa-nonce: missing mandatory claim), p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: wrong profile: expecting "http://arm.com/psa/2.0.0", got "http://arm.com/CCA-SSD/1.0.0")`
 
 		assert.EqualError(t, err, expectedError)
 	}
@@ -97,6 +130,15 @@ func Test_NewClaims_p2_ok(t *testing.T) {
 	p, err := c.GetProfile()
 	assert.NoError(t, err)
 	assert.Equal(t, PsaProfile2, p)
+}
+
+func Test_NewClaims_CcaPlatform_ok(t *testing.T) {
+	c, err := NewClaims(CcaProfile)
+	assert.NoError(t, err)
+
+	p, err := c.GetProfile()
+	assert.NoError(t, err)
+	assert.Equal(t, CcaProfile, p)
 }
 
 func Test_NewClaims_profile_unknown(t *testing.T) {
@@ -247,4 +289,15 @@ func Test_DecodeJSONClaims_P1(t *testing.T) {
 	actualProfile, err := c.GetProfile()
 	assert.NoError(t, err)
 	assert.Equal(t, PsaProfile1, actualProfile)
+}
+
+func Test_DecodeJSONClaims_CcaPlatform(t *testing.T) {
+	buf, err := os.ReadFile("testvectors/json/ccatoken/test-token-valid-full.json")
+	require.NoError(t, err)
+
+	c, err := DecodeJSONClaims(buf)
+	assert.NoError(t, err)
+	actualProfile, err := c.GetProfile()
+	assert.NoError(t, err)
+	assert.Equal(t, CcaProfile, actualProfile)
 }

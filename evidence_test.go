@@ -160,7 +160,7 @@ func TestEvidence_FromCOSE_empty_claims(t *testing.T) {
 
 	err := e.FromCOSE(tv)
 
-	expectedErr := `failed CBOR decoding of PSA claims: decode failed for both p1 (CBOR decoding of PSA claims failed: EOF) and p2 (CBOR decoding of PSA claims failed: EOF)`
+	expectedErr := `failed CBOR decoding of PSA claims: decode failed for all CcaPlatform(CBOR decoding of CCA platform claims failed: EOF), p1 (CBOR decoding of PSA claims failed: EOF) and p2 (CBOR decoding of PSA claims failed: EOF)`
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -178,7 +178,7 @@ func TestEvidence_FromCOSE_bad_claims_unknown_profile(t *testing.T) {
 
 	err := e.FromCOSE(tv)
 
-	expectedErr := `failed CBOR decoding of PSA claims: decode failed for both p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: wrong profile: expecting "http://arm.com/psa/2.0.0", got "http://arm.com/psa/3.0.0")`
+	expectedErr := `failed CBOR decoding of PSA claims: decode failed for all CcaPlatform(validation of CCA platform claims failed: wrong profile: expecting "http://arm.com/CCA-SSD/1.0.0", got "http://arm.com/psa/3.0.0"), p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: wrong profile: expecting "http://arm.com/psa/2.0.0", got "http://arm.com/psa/3.0.0")`
 
 	assert.EqualError(t, err, expectedErr)
 }
