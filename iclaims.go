@@ -52,6 +52,8 @@ type IClaims interface {
 
 func NewClaims(profile string) (IClaims, error) {
 	switch profile {
+	case CcaProfile:
+		return newCcaPlatformClaims()
 	case PsaProfile1:
 		includeProfileClaim := true
 		return newP1Claims(includeProfileClaim)
@@ -63,6 +65,14 @@ func NewClaims(profile string) (IClaims, error) {
 }
 
 func DecodeClaims(buf []byte) (IClaims, error) {
+
+	ccaPlat := &CcaPlatformClaims{}
+
+	err3 := ccaPlat.FromCBOR(buf)
+	if err3 == nil {
+		return ccaPlat, nil
+	}
+
 	p2 := &P2Claims{}
 
 	err2 := p2.FromCBOR(buf)
@@ -77,10 +87,18 @@ func DecodeClaims(buf []byte) (IClaims, error) {
 		return p1, nil
 	}
 
-	return nil, fmt.Errorf("decode failed for both p1 (%v) and p2 (%v)", err1, err2)
+	return nil, fmt.Errorf("decode failed for all CcaPlatform(%v), p1 (%v) and p2 (%v)", err3, err1, err2)
 }
 
 func DecodeJSONClaims(buf []byte) (IClaims, error) {
+
+	ccaPlat := &CcaPlatformClaims{}
+
+	err3 := ccaPlat.FromJSON(buf)
+	if err3 == nil {
+		return ccaPlat, nil
+	}
+
 	p2 := &P2Claims{}
 
 	err2 := p2.FromJSON(buf)
@@ -95,7 +113,7 @@ func DecodeJSONClaims(buf []byte) (IClaims, error) {
 		return p1, nil
 	}
 
-	return nil, fmt.Errorf("JSON decode failed for both p1 (%v) and p2 (%v)", err1, err2)
+	return nil, fmt.Errorf("JSON decode failed for all CcaPlatform(%v), p1 (%v) and p2 (%v)", err3, err1, err2)
 }
 
 func validate(c IClaims, profile string) error {
