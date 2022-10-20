@@ -226,6 +226,19 @@ func TestEvidence_GetInstanceID_psa_profile_2_ok(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestEvidence_GetImplementationID_psa_profile_2_ok(t *testing.T) {
+	tv := mustBuildValidP2Claims(t, false)
+
+	evidence := Evidence{}
+	err := evidence.SetClaims(tv)
+	require.NoError(t, err)
+
+	expected := &testImplementationID
+
+	actual := evidence.GetImplementationID()
+	assert.Equal(t, expected, actual)
+}
+
 func TestEvidence_Verify_no_message(t *testing.T) {
 	evidence := Evidence{}
 	var pk crypto.PublicKey

@@ -46,6 +46,16 @@ func (e *Evidence) GetInstanceID() *[]byte {
 	return &instID
 }
 
+// GetImplementationID returns the ImplementationID from PSA token
+// or a nil pointer if no suitable ImplementationID could be located.
+func (e *Evidence) GetImplementationID() *[]byte {
+	implID, err := e.Claims.GetImplID()
+	if err != nil {
+		return nil
+	}
+	return &implID
+}
+
 // FromCOSE extracts the PSA claims wrapped in the supplied CWT. As per spec,
 // the only acceptable security envelope is COSE_Sign1.
 func (e *Evidence) FromCOSE(cwt []byte) error {
