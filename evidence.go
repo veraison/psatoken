@@ -46,8 +46,9 @@ func (e *Evidence) GetInstanceID() *[]byte {
 	return &instID
 }
 
-// GetImplementationID returns the ImplementationID from PSA token
-// or a nil pointer if no suitable ImplementationID could be located.
+// GetImplementationID returns the ImplementationID claim from the
+// PSA token or a nil pointer if no suitable ImplementationID could
+// be located.
 func (e *Evidence) GetImplementationID() *[]byte {
 	implID, err := e.Claims.GetImplID()
 	if err != nil {
