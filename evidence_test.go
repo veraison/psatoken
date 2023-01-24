@@ -265,7 +265,7 @@ func TestEvidence_sign_and_verify_key_mismatch(t *testing.T) {
 	err = EvidenceOut.FromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
-	pk := pubKeyFromJWK(t, testECKeyB)
+	pk := pubKeyFromJWK(t, testTFMECKey)
 	err = EvidenceOut.Verify(pk)
 	assert.EqualError(t, err, "verification error")
 }
