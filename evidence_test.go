@@ -34,7 +34,7 @@ func TestEvidence_p1_sign_and_verify(t *testing.T) {
 	pk := pubKeyFromJWK(t, testECKeyA)
 
 	err = EvidenceOut.Verify(pk)
-	assert.NoError(t, err, "verification failed")
+	assert.NoError(t, err, "signature verification failed: verification error")
 }
 
 func TestEvidence_p2_sign_and_verify(t *testing.T) {
@@ -267,7 +267,7 @@ func TestEvidence_sign_and_verify_key_mismatch(t *testing.T) {
 
 	pk := pubKeyFromJWK(t, testTFMECKey)
 	err = EvidenceOut.Verify(pk)
-	assert.EqualError(t, err, "verification error")
+	assert.EqualError(t, err, "signature verification failed: verification error")
 }
 
 func TestEvidence_sign_and_verify_alg_mismatch(t *testing.T) {

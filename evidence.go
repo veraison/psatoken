@@ -127,7 +127,7 @@ func (e *Evidence) Verify(pk crypto.PublicKey) error {
 
 	err = e.message.Verify([]byte(""), verifier)
 	if err != nil {
-		return err
+		return fmt.Errorf("signature verification failed: %w", err)
 	}
 
 	return nil
