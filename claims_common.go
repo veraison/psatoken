@@ -1,4 +1,4 @@
-// Copyright 2021-2022 Contributors to the Veraison project.
+// Copyright 2021-2023 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
 package psatoken
@@ -50,6 +50,84 @@ const (
 	SecurityLifecycleDecommissionedMax         = 0x60ff
 )
 
+type PsaLifeCycleState uint16
+
+const (
+	PsaStateUnknown PsaLifeCycleState = iota
+	PsaStateAssemblyAndTest
+	PsaStatePsaRotProvisioning
+	PsaStateSecured
+	PsaStateNonPsaRotDebug
+	PsaStateRecoverablePsaRotDebug
+	PsaStateDecommissioned
+
+	PsaStateInvalid // must be last
+)
+
+func (o PsaLifeCycleState) IsValid() bool {
+	return o < PsaStateInvalid
+}
+
+func (o PsaLifeCycleState) String() string {
+	switch o {
+	case PsaStateUnknown:
+		return "unknown"
+	case PsaStateAssemblyAndTest:
+		return "assembly-and-test"
+	case PsaStatePsaRotProvisioning:
+		return "psa-rot-provisioning"
+	case PsaStateSecured:
+		return "secured"
+	case PsaStateNonPsaRotDebug:
+		return "non-psa-rot-debug"
+	case PsaStateRecoverablePsaRotDebug:
+		return "recoverable-psa-rot-debug"
+	case PsaStateDecommissioned:
+		return "decommissioned"
+	default:
+		return "invalid"
+	}
+}
+
+func PsaLifeCycleToState(v uint16) PsaLifeCycleState {
+	if v >= SecurityLifecycleUnknownMin &&
+		v <= SecurityLifecycleUnknownMax {
+		return PsaStateUnknown
+	}
+
+	if v >= SecurityLifecycleAssemblyAndTestMin &&
+		v <= SecurityLifecycleAssemblyAndTestMax {
+		return PsaStateAssemblyAndTest
+	}
+
+	if v >= SecurityLifecyclePsaRotProvisioningMin &&
+		v <= SecurityLifecyclePsaRotProvisioningMax {
+		return PsaStatePsaRotProvisioning
+	}
+
+	if v >= SecurityLifecycleSecuredMin &&
+		v <= SecurityLifecycleSecuredMax {
+		return PsaStateSecured
+	}
+
+	if v >= SecurityLifecycleNonPsaRotDebugMin &&
+		v <= SecurityLifecycleNonPsaRotDebugMax {
+		return PsaStateNonPsaRotDebug
+	}
+
+	if v >= SecurityLifecycleRecoverablePsaRotDebugMin &&
+		v <= SecurityLifecycleRecoverablePsaRotDebugMax {
+		return PsaStateRecoverablePsaRotDebug
+	}
+
+	if v >= SecurityLifecycleDecommissionedMin &&
+		v <= SecurityLifecycleDecommissionedMax {
+		return PsaStateDecommissioned
+	}
+
+	return PsaStateInvalid
+}
+
 const (
 	CcaPlatformLifecycleUnknownMin                     = 0x0000
 	CcaPlatformLifecycleUnknownMax                     = 0x00ff
@@ -67,111 +145,104 @@ const (
 	CcaPlatformLifecycleDecommissionedMax              = 0x60ff
 )
 
+type CcaLifeCycleState uint16
+
 const (
-	Invalid = "invalid"
+	CcaStateUnknown CcaLifeCycleState = iota
+	CcaStateAssemblyAndTest
+	CcaStateCcaRotProvisioning
+	CcaStateSecured
+	CcaStateNonCcaPlatformDebug
+	CcaStateRecoverableCcaPlatformDebug
+	CcaStateDecommissioned
+
+	CcaStateInvalid // must be last
 )
 
-var (
-	CertificationReferenceP1RE = regexp.MustCompile(`^[0-9]{13}$`)
-	CertificationReferenceP2RE = regexp.MustCompile(`^[0-9]{13}-[0-9]{5}$`)
-)
-
-func checkP1P2secLifeCycle(v uint16) string {
-	if v >= SecurityLifecycleUnknownMin &&
-		v <= SecurityLifecycleUnknownMax {
-		return "unknown"
-	}
-
-	if v >= SecurityLifecycleAssemblyAndTestMin &&
-		v <= SecurityLifecycleAssemblyAndTestMax {
-		return "assembly-and-test"
-	}
-
-	if v >= SecurityLifecyclePsaRotProvisioningMin &&
-		v <= SecurityLifecyclePsaRotProvisioningMax {
-		return "psa-rot-provisioning"
-	}
-
-	if v >= SecurityLifecycleSecuredMin &&
-		v <= SecurityLifecycleSecuredMax {
-		return "secured"
-	}
-
-	if v >= SecurityLifecycleNonPsaRotDebugMin &&
-		v <= SecurityLifecycleNonPsaRotDebugMax {
-		return "non-psa-rot-debug"
-	}
-
-	if v >= SecurityLifecycleRecoverablePsaRotDebugMin &&
-		v <= SecurityLifecycleRecoverablePsaRotDebugMax {
-		return "recoverable-psa-rot-debug"
-	}
-
-	if v >= SecurityLifecycleDecommissionedMin &&
-		v <= SecurityLifecycleDecommissionedMax {
-		return "decommissioned"
-	}
-	return Invalid
+func (o CcaLifeCycleState) IsValid() bool {
+	return o < CcaStateInvalid
 }
 
-func checkCcaLifeCycle(v uint16) string {
+func (o CcaLifeCycleState) String() string {
+	switch o {
+	case CcaStateUnknown:
+		return "unknown"
+	case CcaStateAssemblyAndTest:
+		return "assembly-and-test"
+	case CcaStateCcaRotProvisioning:
+		return "cca-platform-rot-provisioning"
+	case CcaStateSecured:
+		return "secured"
+	case CcaStateNonCcaPlatformDebug:
+		return "non-cca-platform-rot-debug"
+	case CcaStateRecoverableCcaPlatformDebug:
+		return "recoverable-cca-platform-rot-debug"
+	case CcaStateDecommissioned:
+		return "decommissioned"
+	default:
+		return "invalid"
+	}
+}
+
+func CcaLifeCycleToState(v uint16) CcaLifeCycleState {
 	if v >= CcaPlatformLifecycleUnknownMin &&
 		v <= CcaPlatformLifecycleUnknownMax {
-		return "unknown"
+		return CcaStateUnknown
 	}
 
 	if v >= CcaPlatformLifecycleAssemblyAndTestMin &&
 		v <= CcaPlatformLifecycleAssemblyAndTestMax {
-		return "assembly-and-test"
+		return CcaStateAssemblyAndTest
 	}
 
 	if v >= CcaPlatformLifecycleRotProvisioningMin &&
 		v <= CcaPlatformLifecycleRotProvisioningMax {
-		return "cca-platform-rot-provisioning"
+		return CcaStateCcaRotProvisioning
 	}
 
 	if v >= CcaPlatformLifecycleSecuredMin &&
 		v <= CcaPlatformLifecycleSecuredMax {
-		return "secured"
+		return CcaStateSecured
 	}
 
 	if v >= CcaPlatformLifecycleNonCcaPlatformDebugMin &&
 		v <= CcaPlatformLifecycleNonCcaPlatformDebugMax {
-		return "non-cca-platform-rot-debug"
+		return CcaStateNonCcaPlatformDebug
 	}
 
 	if v >= CcaPlatformLifecycleRecoverableCcaPlatformDebugMin &&
 		v <= CcaPlatformLifecycleRecoverableCcaPlatformDebugMax {
-		return "recoverable-cca-platform-rot-debug"
+		return CcaStateRecoverableCcaPlatformDebug
 	}
 
 	if v >= CcaPlatformLifecycleDecommissionedMin &&
 		v <= CcaPlatformLifecycleDecommissionedMax {
-		return "decommissioned"
+		return CcaStateDecommissioned
 	}
-	return Invalid
-}
-
-func securityLifeCycleToString(v uint16, profile string) string {
-
-	switch profile {
-	case PsaProfile1, PsaProfile2:
-		return checkP1P2secLifeCycle(v)
-	case CcaProfile:
-		return checkCcaLifeCycle(v)
-	}
-	return Invalid
+	return CcaStateInvalid
 }
 
 func isValidSecurityLifeCycle(v uint16, profile string) error {
-	// Accept any security lifecycle in the state machine, including values that
-	// can't produce trustable PSA evidence.
-	if securityLifeCycleToString(v, profile) == "invalid" {
+	var isValid bool
+
+	switch profile {
+	case PsaProfile1, PsaProfile2:
+		isValid = PsaLifeCycleToState(v).IsValid()
+	case CcaProfile:
+		isValid = CcaLifeCycleToState(v).IsValid()
+	}
+
+	if !isValid {
 		return fmt.Errorf("%w: value %d is invalid", ErrWrongClaimSyntax, v)
 	}
 
 	return nil
 }
+
+var (
+	CertificationReferenceP1RE = regexp.MustCompile(`^[0-9]{13}$`)
+	CertificationReferenceP2RE = regexp.MustCompile(`^[0-9]{13}-[0-9]{5}$`)
+)
 
 func isValidImplID(v []byte) error {
 	l := len(v)
