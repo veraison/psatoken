@@ -160,7 +160,7 @@ func TestEvidence_FromCOSE_empty_claims(t *testing.T) {
 
 	err := e.FromCOSE(tv)
 
-	expectedErr := `failed CBOR decoding of PSA claims: decode failed for all CcaPlatform(CBOR decoding of CCA platform claims failed: EOF), p1 (CBOR decoding of PSA claims failed: EOF) and p2 (CBOR decoding of PSA claims failed: EOF)`
+	expectedErr := `failed CBOR decoding of PSA claims: decode failed for all CcaPlatform (CBOR decoding of CCA platform claims failed: EOF), p1 (CBOR decoding of PSA claims failed: EOF) and p2 (CBOR decoding of PSA claims failed: EOF)`
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -178,9 +178,41 @@ func TestEvidence_FromCOSE_bad_claims_unknown_profile(t *testing.T) {
 
 	err := e.FromCOSE(tv)
 
-	expectedErr := `failed CBOR decoding of PSA claims: decode failed for all CcaPlatform(validation of CCA platform claims failed: wrong profile: expecting "http://arm.com/CCA-SSD/1.0.0", got "http://arm.com/psa/3.0.0"), p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: wrong profile: expecting "http://arm.com/psa/2.0.0", got "http://arm.com/psa/3.0.0")`
+	expectedErr := `failed CBOR decoding of PSA claims: decode failed for all CcaPlatform (validation of CCA platform claims failed: wrong profile: expecting "http://arm.com/CCA-SSD/1.0.0", got "http://arm.com/psa/3.0.0"), p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: wrong profile: expecting "http://arm.com/psa/2.0.0", got "http://arm.com/psa/3.0.0")`
 
 	assert.EqualError(t, err, expectedErr)
+}
+
+func TestEvidence_FromUnvalidatedCOSE(t *testing.T) {
+	type TestVector struct {
+		data        []byte
+		expectedErr string
+	}
+
+	testVectors := []TestVector{
+		{[]byte{0x00}, "failed CBOR decoding for CWT: cbor: invalid COSE_Sign1_Tagged object"},
+		{[]byte{0xd2, 0x84}, "failed CBOR decoding for CWT: unexpected EOF"},
+		{[]byte{
+			0xd2, 0x84, 0x43, 0xa1, 0x01, 0x26, 0xa0, 0x40, 0x44, 0xde, 0xad,
+			0xbe, 0xef,
+		}, `failed CBOR decoding of PSA claims: decode failed for some of CcaPlatform (CBOR decoding of CCA platform claims failed: EOF), p1 (CBOR decoding of PSA claims failed: EOF) and p2 (CBOR decoding of PSA claims failed: EOF)`},
+		{[]byte{
+			0xd2, 0x84, 0x43, 0xa1, 0x01, 0x26, 0xa0, 0x58, 0x1e, 0xa1, 0x19, 0x01,
+			0x09, 0x78, 0x18, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x61, 0x72,
+			0x6d, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x73, 0x61, 0x2f, 0x33, 0x2e,
+			0x30, 0x2e, 0x30, 0x44, 0xde, 0xad, 0xbe, 0xef,
+		}, ""},
+	}
+
+	e := Evidence{}
+	for _, tv := range testVectors {
+		err := e.FromUnvalidatedCOSE(tv.data)
+		if tv.expectedErr == "" {
+			assert.NoError(t, err)
+		} else {
+			assert.EqualError(t, err, tv.expectedErr)
+		}
+	}
 }
 
 func TestEvidence_SetClaims_unknown_profile(t *testing.T) {
@@ -292,4 +324,30 @@ func TestEvidence_sign_and_verify_alg_mismatch(t *testing.T) {
 
 	err = EvidenceOut.Verify(pk)
 	assert.EqualError(t, err, "unable to instantiate verifier: ES256: algorithm mismatch")
+}
+
+func TestEvidence_SignUnvalidated(t *testing.T) {
+	tokenSigner := signerFromJWK(t, testECKeyA)
+
+	buf := mustHexDecode(t, testEncodedCcaPlatformClaimsMissingMandatoryNonce)
+	v, err := DecodeUnvalidatedClaims(buf)
+	require.NoError(t, err)
+
+	var EvidenceIn Evidence
+
+	EvidenceIn.Claims = v
+
+	cwt, err := EvidenceIn.SignUnvalidated(tokenSigner)
+	assert.NoError(t, err, "signing failed")
+
+	fmt.Printf("PSA evidence (profile 2): %x\n", cwt)
+
+	var EvidenceOut Evidence
+
+	err = EvidenceOut.FromUnvalidatedCOSE(cwt)
+	assert.NoError(t, err, "Sign1Message decoding failed")
+
+	pk := pubKeyFromJWK(t, testTFMECKey)
+	err = EvidenceOut.Verify(pk)
+	assert.EqualError(t, err, "signature verification failed: verification error")
 }
