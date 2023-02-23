@@ -55,14 +55,23 @@ func (c CcaPlatformClaims) Validate() error {
 // Codecs
 
 func (c *CcaPlatformClaims) FromCBOR(buf []byte) error {
-	err := dm.Unmarshal(buf, c)
+	err := c.FromUnvalidatedCBOR(buf)
 	if err != nil {
-		return fmt.Errorf("CBOR decoding of CCA platform claims failed: %w", err)
+		return err
 	}
 
 	err = c.Validate()
 	if err != nil {
 		return fmt.Errorf("validation of CCA platform claims failed: %w", err)
+	}
+
+	return nil
+}
+
+func (c *CcaPlatformClaims) FromUnvalidatedCBOR(buf []byte) error {
+	err := dm.Unmarshal(buf, c)
+	if err != nil {
+		return fmt.Errorf("CBOR decoding of CCA platform claims failed: %w", err)
 	}
 
 	return nil
@@ -74,6 +83,10 @@ func (c CcaPlatformClaims) ToCBOR() ([]byte, error) {
 		return nil, fmt.Errorf("validation of CCA platform claims failed: %w", err)
 	}
 
+	return c.ToUnvalidatedCBOR()
+}
+
+func (c CcaPlatformClaims) ToUnvalidatedCBOR() ([]byte, error) {
 	buf, err := em.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("CBOR encoding of CCA platform claims failed: %w", err)
@@ -83,14 +96,23 @@ func (c CcaPlatformClaims) ToCBOR() ([]byte, error) {
 }
 
 func (c *CcaPlatformClaims) FromJSON(buf []byte) error {
-	err := json.Unmarshal(buf, c)
+	err := c.FromUnvalidatedJSON(buf)
 	if err != nil {
-		return fmt.Errorf("JSON decoding of CCA platform claims failed: %w", err)
+		return err
 	}
 
 	err = c.Validate()
 	if err != nil {
 		return fmt.Errorf("validation of CCA platform claims failed: %w", err)
+	}
+
+	return nil
+}
+
+func (c *CcaPlatformClaims) FromUnvalidatedJSON(buf []byte) error {
+	err := json.Unmarshal(buf, c)
+	if err != nil {
+		return fmt.Errorf("JSON decoding of CCA platform claims failed: %w", err)
 	}
 
 	return nil
@@ -102,6 +124,10 @@ func (c CcaPlatformClaims) ToJSON() ([]byte, error) {
 		return nil, fmt.Errorf("validation of CCA platform claims failed: %w", err)
 	}
 
+	return c.ToUnvalidatedJSON()
+}
+
+func (c CcaPlatformClaims) ToUnvalidatedJSON() ([]byte, error) {
 	buf, err := json.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("JSON encoding of CCA platform claims failed: %w", err)

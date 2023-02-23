@@ -127,14 +127,23 @@ func (c *P1Claims) SetHashAlgID(v string) error {
 // Codecs
 
 func (c *P1Claims) FromCBOR(buf []byte) error {
-	err := dm.Unmarshal(buf, c)
+	err := c.FromUnvalidatedCBOR(buf)
 	if err != nil {
-		return fmt.Errorf("CBOR decoding of PSA claims failed: %w", err)
+		return err
 	}
 
 	err = c.Validate()
 	if err != nil {
 		return fmt.Errorf("validation of PSA claims failed: %w", err)
+	}
+
+	return nil
+}
+
+func (c *P1Claims) FromUnvalidatedCBOR(buf []byte) error {
+	err := dm.Unmarshal(buf, c)
+	if err != nil {
+		return fmt.Errorf("CBOR decoding of PSA claims failed: %w", err)
 	}
 
 	return nil
@@ -146,6 +155,10 @@ func (c P1Claims) ToCBOR() ([]byte, error) {
 		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
 	}
 
+	return c.ToUnvalidatedCBOR()
+}
+
+func (c P1Claims) ToUnvalidatedCBOR() ([]byte, error) {
 	buf, err := em.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("CBOR encoding of PSA claims failed: %w", err)
@@ -155,14 +168,23 @@ func (c P1Claims) ToCBOR() ([]byte, error) {
 }
 
 func (c *P1Claims) FromJSON(buf []byte) error {
-	err := json.Unmarshal(buf, c)
+	err := c.FromUnvalidatedJSON(buf)
 	if err != nil {
-		return fmt.Errorf("JSON decoding of PSA claims failed: %w", err)
+		return err
 	}
 
 	err = c.Validate()
 	if err != nil {
 		return fmt.Errorf("validation of PSA claims failed: %w", err)
+	}
+
+	return nil
+}
+
+func (c *P1Claims) FromUnvalidatedJSON(buf []byte) error {
+	err := json.Unmarshal(buf, c)
+	if err != nil {
+		return fmt.Errorf("JSON decoding of PSA claims failed: %w", err)
 	}
 
 	return nil
@@ -174,6 +196,10 @@ func (c P1Claims) ToJSON() ([]byte, error) {
 		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
 	}
 
+	return c.ToUnvalidatedJSON()
+}
+
+func (c P1Claims) ToUnvalidatedJSON() ([]byte, error) {
 	buf, err := json.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("JSON encoding of PSA claims failed: %w", err)

@@ -75,6 +75,24 @@ func (e *Evidence) FromCOSE(cwt []byte) error {
 	return nil
 }
 
+// FromUnvalidatedCOSE extracts unvalidated claims wrapped in the supplied CWT.
+// As per spec, the only acceptable security envelope is COSE_Sign1.
+func (e *Evidence) FromUnvalidatedCOSE(cwt []byte) error {
+	var err error
+
+	e.message = cose.NewSign1Message()
+
+	if err = e.message.UnmarshalCBOR(cwt); err != nil {
+		return fmt.Errorf("failed CBOR decoding for CWT: %w", err)
+	}
+
+	if e.Claims, err = DecodeUnvalidatedClaims(e.message.Payload); err != nil {
+		return fmt.Errorf("failed CBOR decoding of PSA claims: %w", err)
+	}
+
+	return nil
+}
+
 // Sign returns the Evidence wrapped in a CWT according to the supplied
 // go-cose Signer.  (For now only COSE-Sign1 is supported.)
 func (e *Evidence) Sign(signer cose.Signer) ([]byte, error) {
@@ -87,6 +105,27 @@ func (e *Evidence) Sign(signer cose.Signer) ([]byte, error) {
 		return nil, err
 	}
 
+	return e.doSign(signer)
+
+}
+
+// SignUnvalidated returns the Evidence wrapped in a CWT according to the
+// supplied go-cose Signer.  (For now only COSE-Sign1 is supported.) Unlike
+// Sign, this does not validate the evidence before signing.
+func (e *Evidence) SignUnvalidated(signer cose.Signer) ([]byte, error) {
+
+	e.message = cose.NewSign1Message()
+
+	var err error
+	e.message.Payload, err = e.Claims.ToUnvalidatedCBOR()
+	if err != nil {
+		return nil, err
+	}
+
+	return e.doSign(signer)
+}
+
+func (e *Evidence) doSign(signer cose.Signer) ([]byte, error) {
 	alg := signer.Algorithm()
 
 	if strings.Contains(alg.String(), "unknown algorithm value") {
@@ -95,7 +134,7 @@ func (e *Evidence) Sign(signer cose.Signer) ([]byte, error) {
 
 	e.message.Headers.Protected.SetAlgorithm(alg)
 
-	err = e.message.Sign(rand.Reader, []byte(""), signer)
+	err := e.message.Sign(rand.Reader, []byte(""), signer)
 	if err != nil {
 		return nil, err
 	}

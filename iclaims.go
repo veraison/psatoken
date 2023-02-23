@@ -6,6 +6,7 @@ package psatoken
 import (
 	"errors"
 	"fmt"
+	"reflect"
 )
 
 // IClaims provides a uniform interface for dealing with claims in all supported
@@ -41,10 +42,14 @@ type IClaims interface {
 	// CBOR codecs
 	FromCBOR([]byte) error
 	ToCBOR() ([]byte, error)
+	FromUnvalidatedCBOR([]byte) error
+	ToUnvalidatedCBOR() ([]byte, error)
 
 	// JSON codecs
 	FromJSON([]byte) error
 	ToJSON() ([]byte, error)
+	FromUnvalidatedJSON([]byte) error
+	ToUnvalidatedJSON() ([]byte, error)
 
 	// Semantic validation
 	Validate() error
@@ -87,7 +92,24 @@ func DecodeClaims(buf []byte) (IClaims, error) {
 		return p1, nil
 	}
 
-	return nil, fmt.Errorf("decode failed for all CcaPlatform(%v), p1 (%v) and p2 (%v)", err3, err1, err2)
+	return nil, fmt.Errorf("decode failed for all CcaPlatform (%v), p1 (%v) and p2 (%v)", err3, err1, err2)
+}
+
+func DecodeUnvalidatedClaims(buf []byte) (IClaims, error) {
+
+	ccaPlat := &CcaPlatformClaims{}
+	p2 := &P2Claims{}
+	p1 := &P1Claims{}
+
+	err3 := ccaPlat.FromUnvalidatedCBOR(buf)
+	err2 := p2.FromUnvalidatedCBOR(buf)
+	err1 := p1.FromUnvalidatedCBOR(buf)
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		return nil, fmt.Errorf("decode failed for some of CcaPlatform (%v), p1 (%v) and p2 (%v)", err3, err1, err2)
+	}
+
+	return pickBestMatch(ccaPlat, p2, p1)
 }
 
 func DecodeJSONClaims(buf []byte) (IClaims, error) {
@@ -113,7 +135,57 @@ func DecodeJSONClaims(buf []byte) (IClaims, error) {
 		return p1, nil
 	}
 
-	return nil, fmt.Errorf("JSON decode failed for all CcaPlatform(%v), p1 (%v) and p2 (%v)", err3, err1, err2)
+	return nil, fmt.Errorf("JSON decode failed for all CcaPlatform (%v), p1 (%v) and p2 (%v)", err3, err1, err2)
+}
+
+func DecodeUnvalidatedJSONClaims(buf []byte) (IClaims, error) {
+
+	ccaPlat := &CcaPlatformClaims{}
+	p2 := &P2Claims{}
+	p1 := &P1Claims{}
+
+	err3 := ccaPlat.FromUnvalidatedJSON(buf)
+	err2 := p2.FromUnvalidatedJSON(buf)
+	err1 := p1.FromUnvalidatedJSON(buf)
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		return nil, fmt.Errorf("decode failed for some of CcaPlatform (%v), p1 (%v) and p2 (%v)", err3, err1, err2)
+	}
+
+	return pickBestMatch(ccaPlat, p2, p1)
+}
+
+func pickBestMatch(claims ...IClaims) (IClaims, error) {
+	if len(claims) < 1 {
+		return nil, errors.New("must specify at least one set of claims")
+	}
+
+	selected := claims[0]
+	selectedCount := countNonNilFields(claims[0])
+
+	for _, c := range claims[1:] {
+		count := countNonNilFields(c)
+		if count > selectedCount {
+			selected = c
+			selectedCount = count
+		}
+	}
+
+	return selected, nil
+}
+
+func countNonNilFields(s IClaims) int {
+	sVal := reflect.ValueOf(s).Elem()
+
+	count := 0
+
+	for i := 0; i < sVal.NumField(); i++ {
+		if !sVal.Field(i).IsZero() {
+			count++
+		}
+	}
+
+	return count
 }
 
 func validate(c IClaims, profile string) error {

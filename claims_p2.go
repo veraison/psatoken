@@ -11,7 +11,7 @@ import (
 	"github.com/veraison/eat"
 )
 
-//	P2Claims are associated with profile "http://arm.com/psa/2.0.0"
+// P2Claims are associated with profile "http://arm.com/psa/2.0.0"
 type P2Claims struct {
 	Profile                *eat.Profile   `cbor:"265,keyasint" json:"eat-profile"`
 	ClientID               *int32         `cbor:"2394,keyasint" json:"psa-client-id"`
@@ -129,14 +129,23 @@ func (c *P2Claims) SetHashAlgID(v string) error {
 // Codecs
 
 func (c *P2Claims) FromCBOR(buf []byte) error {
-	err := dm.Unmarshal(buf, c)
+	err := c.FromUnvalidatedCBOR(buf)
 	if err != nil {
-		return fmt.Errorf("CBOR decoding of PSA claims failed: %w", err)
+		return err
 	}
 
 	err = c.Validate()
 	if err != nil {
 		return fmt.Errorf("validation of PSA claims failed: %w", err)
+	}
+
+	return nil
+}
+
+func (c *P2Claims) FromUnvalidatedCBOR(buf []byte) error {
+	err := dm.Unmarshal(buf, c)
+	if err != nil {
+		return fmt.Errorf("CBOR decoding of PSA claims failed: %w", err)
 	}
 
 	return nil
@@ -148,6 +157,10 @@ func (c P2Claims) ToCBOR() ([]byte, error) {
 		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
 	}
 
+	return c.ToUnvalidatedCBOR()
+}
+
+func (c P2Claims) ToUnvalidatedCBOR() ([]byte, error) {
 	buf, err := em.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("CBOR encoding of PSA claims failed: %w", err)
@@ -157,14 +170,23 @@ func (c P2Claims) ToCBOR() ([]byte, error) {
 }
 
 func (c *P2Claims) FromJSON(buf []byte) error {
-	err := json.Unmarshal(buf, c)
+	err := c.FromUnvalidatedJSON(buf)
 	if err != nil {
-		return fmt.Errorf("JSON decoding of PSA claims failed: %w", err)
+		return err
 	}
 
 	err = c.Validate()
 	if err != nil {
 		return fmt.Errorf("validation of PSA claims failed: %w", err)
+	}
+
+	return nil
+}
+
+func (c *P2Claims) FromUnvalidatedJSON(buf []byte) error {
+	err := json.Unmarshal(buf, c)
+	if err != nil {
+		return fmt.Errorf("JSON decoding of PSA claims failed: %w", err)
 	}
 
 	return nil
@@ -176,6 +198,10 @@ func (c P2Claims) ToJSON() ([]byte, error) {
 		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
 	}
 
+	return c.ToUnvalidatedJSON()
+}
+
+func (c P2Claims) ToUnvalidatedJSON() ([]byte, error) {
 	buf, err := json.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("JSON encoding of PSA claims failed: %w", err)
