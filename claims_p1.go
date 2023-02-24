@@ -37,7 +37,7 @@ func newP1Claims(includeProfile bool) (IClaims, error) {
 }
 
 // Semantic validation
-func (c P1Claims) Validate() error {
+func (c P1Claims) Validate() error { //nolint:gocritic
 	return validate(&c, PsaProfile1)
 }
 
@@ -149,7 +149,7 @@ func (c *P1Claims) FromUnvalidatedCBOR(buf []byte) error {
 	return nil
 }
 
-func (c P1Claims) ToCBOR() ([]byte, error) {
+func (c P1Claims) ToCBOR() ([]byte, error) { //nolint:gocritic
 	err := c.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
@@ -158,7 +158,7 @@ func (c P1Claims) ToCBOR() ([]byte, error) {
 	return c.ToUnvalidatedCBOR()
 }
 
-func (c P1Claims) ToUnvalidatedCBOR() ([]byte, error) {
+func (c P1Claims) ToUnvalidatedCBOR() ([]byte, error) { //nolint:gocritic
 	buf, err := em.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("CBOR encoding of PSA claims failed: %w", err)
@@ -190,7 +190,7 @@ func (c *P1Claims) FromUnvalidatedJSON(buf []byte) error {
 	return nil
 }
 
-func (c P1Claims) ToJSON() ([]byte, error) {
+func (c P1Claims) ToJSON() ([]byte, error) { //nolint:gocritic
 	err := c.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
@@ -199,7 +199,7 @@ func (c P1Claims) ToJSON() ([]byte, error) {
 	return c.ToUnvalidatedJSON()
 }
 
-func (c P1Claims) ToUnvalidatedJSON() ([]byte, error) {
+func (c P1Claims) ToUnvalidatedJSON() ([]byte, error) { //nolint:gocritic
 	buf, err := json.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("JSON encoding of PSA claims failed: %w", err)
@@ -213,7 +213,7 @@ func (c P1Claims) ToUnvalidatedJSON() ([]byte, error) {
 // to never fail.  Getters of optional claim may still fail with
 // ErrOptionalClaimMissing in case the claim is not present.
 
-func (c P1Claims) GetProfile() (string, error) {
+func (c P1Claims) GetProfile() (string, error) { //nolint:gocritic
 	if c.Profile == nil {
 		return PsaProfile1, nil
 	}
@@ -221,28 +221,28 @@ func (c P1Claims) GetProfile() (string, error) {
 	return *c.Profile, nil
 }
 
-func (c P1Claims) GetClientID() (int32, error) {
+func (c P1Claims) GetClientID() (int32, error) { //nolint:gocritic
 	return getClientID(c.ClientID)
 }
 
-func (c P1Claims) GetSecurityLifeCycle() (uint16, error) {
+func (c P1Claims) GetSecurityLifeCycle() (uint16, error) { //nolint:gocritic
 	return getSecurityLifeCycle(c.SecurityLifeCycle, PsaProfile1)
 }
 
-func (c P1Claims) GetImplID() ([]byte, error) {
+func (c P1Claims) GetImplID() ([]byte, error) { //nolint:gocritic
 	return getImplID(c.ImplID)
 }
 
-func (c P1Claims) GetBootSeed() ([]byte, error) {
+func (c P1Claims) GetBootSeed() ([]byte, error) { //nolint:gocritic
 	return getBootSeed(c.BootSeed, PsaProfile1)
 }
 
-func (c P1Claims) GetCertificationReference() (string, error) {
+func (c P1Claims) GetCertificationReference() (string, error) { //nolint:gocritic
 	return getCertificationReference(c.CertificationReference, PsaProfile1)
 }
 
 // Caveat: this may return nil on success if psa-no-sw-measurement is asserted
-func (c P1Claims) GetSoftwareComponents() ([]SwComponent, error) {
+func (c P1Claims) GetSoftwareComponents() ([]SwComponent, error) { //nolint:gocritic
 	v := c.SwComponents
 	f := c.NoSwMeasurements
 
@@ -270,7 +270,7 @@ func (c P1Claims) GetSoftwareComponents() ([]SwComponent, error) {
 	return *v, nil
 }
 
-func (c P1Claims) GetNonce() ([]byte, error) {
+func (c P1Claims) GetNonce() ([]byte, error) { //nolint:gocritic
 	v := c.Nonce
 
 	if v == nil {
@@ -284,7 +284,7 @@ func (c P1Claims) GetNonce() ([]byte, error) {
 	return *v, nil
 }
 
-func (c P1Claims) GetInstID() ([]byte, error) {
+func (c P1Claims) GetInstID() ([]byte, error) { //nolint:gocritic
 	v := c.InstID
 
 	if v == nil {
@@ -298,16 +298,16 @@ func (c P1Claims) GetInstID() ([]byte, error) {
 	return *v, nil
 }
 
-func (c P1Claims) GetVSI() (string, error) {
+func (c P1Claims) GetVSI() (string, error) { //nolint:gocritic
 	return getVSI(c.VSI)
 }
 
-func (c P1Claims) GetConfig() ([]byte, error) {
+func (c P1Claims) GetConfig() ([]byte, error) { //nolint:gocritic
 
 	return nil, fmt.Errorf("invalid GetConfig invoked on p1 claims")
 }
 
-func (c P1Claims) GetHashAlgID() (string, error) {
+func (c P1Claims) GetHashAlgID() (string, error) { //nolint:gocritic
 
 	return "", fmt.Errorf("invalid GetHashAlgID invoked on p1 claims")
 }

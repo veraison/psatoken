@@ -75,4 +75,5 @@ processed, e.g.:
 	myPolicy.VerifyAttestation(evidence.Claims)
 
 */
+//nolint:gofmt
 package psatoken
