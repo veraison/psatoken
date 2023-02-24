@@ -240,8 +240,8 @@ func isValidSecurityLifeCycle(v uint16, profile string) error {
 }
 
 var (
-	CertificationReferenceP1RE = regexp.MustCompile(`^[0-9]{13}$`)
-	CertificationReferenceP2RE = regexp.MustCompile(`^[0-9]{13}-[0-9]{5}$`)
+	CertificationReferenceP1RE = regexp.MustCompile(`^\d{13}$`)
+	CertificationReferenceP2RE = regexp.MustCompile(`^\d{13}-\d{5}$`)
 )
 
 func isValidImplID(v []byte) error {
