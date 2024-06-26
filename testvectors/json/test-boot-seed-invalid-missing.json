@@ -19,6 +19,5 @@
   "psa-nonce": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
   "psa-instance-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAh",
   "psa-verification-service-indicator": "https://psa-verifier.org",
-  "psa-profile": "PSA_IOT_PROFILE_1",
   "psa-certification-reference": "1234567890123-12345"
 }

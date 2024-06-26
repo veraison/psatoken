@@ -1,3 +1,5 @@
+// Copyright 2021-2024 Contributors to the Veraison project.
+// SPDX-License-Identifier: Apache-2.0
 // CCA platform Claims
 package psatoken
 
@@ -7,6 +9,26 @@ import (
 
 	"github.com/veraison/eat"
 )
+
+type CCAPlatformProfile struct{}
+
+func (o CCAPlatformProfile) GetName() string {
+	return "http://arm.com/CCA-SSD/1.0.0"
+}
+
+func (o CCAPlatformProfile) GetClaims() IClaims {
+	claims, err := newCcaPlatformClaims()
+
+	if err != nil {
+		// We should never get here as the only source of error inside
+		// newCcaPlatformClaims() is when attempting to set the Profile field
+		// when it is already set; however, as we're creating a new
+		// claims struct, this cannot happen.
+		panic(err)
+	}
+
+	return claims
+}
 
 type CcaPlatformClaims struct {
 	Profile      *eat.Profile   `cbor:"265,keyasint" json:"cca-platform-profile"`
@@ -320,4 +342,10 @@ func (c CcaPlatformClaims) GetHashAlgID() (string, error) {
 		return "", err
 	}
 	return *v, nil
+}
+
+func init() {
+	if err := RegisterProfile(CCAPlatformProfile{}); err != nil {
+		panic(err)
+	}
 }

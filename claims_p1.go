@@ -1,4 +1,4 @@
-// Copyright 2021-2022 Contributors to the Veraison project.
+// Copyright 2021-2024 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
 package psatoken
@@ -8,6 +8,26 @@ import (
 	"encoding/json"
 	"fmt"
 )
+
+type PSAProfile1 struct{}
+
+func (o PSAProfile1) GetName() string {
+	return "PSA_IOT_PROFILE_1"
+}
+
+func (o PSAProfile1) GetClaims() IClaims {
+	claims, err := newP1Claims(true)
+
+	if err != nil {
+		// We should never get here as the only source of error inside
+		// newP1Claims() is when attempting to set the Profile field
+		// when it is already set; however, as we're crleating a new
+		// claims struct, this cannot happen.
+		panic(err)
+	}
+
+	return claims
+}
 
 // P1Claims are associated with profile "PSA_IOT_PROFILE_1"
 type P1Claims struct {
@@ -310,4 +330,14 @@ func (c P1Claims) GetConfig() ([]byte, error) { //nolint:gocritic
 func (c P1Claims) GetHashAlgID() (string, error) { //nolint:gocritic
 
 	return "", fmt.Errorf("invalid GetHashAlgID invoked on p1 claims")
+}
+
+func init() {
+	if err := registerDefaultProfile(PSAProfile1{}); err != nil {
+		panic(err)
+	}
+
+	if err := RegisterProfile(PSAProfile1{}); err != nil {
+		panic(err)
+	}
 }

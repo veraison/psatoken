@@ -1,4 +1,4 @@
-// Copyright 2021-2022 Contributors to the Veraison project.
+// Copyright 2021-2024 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
 package psatoken
@@ -10,6 +10,26 @@ import (
 
 	"github.com/veraison/eat"
 )
+
+type PSAProfile2 struct{}
+
+func (o PSAProfile2) GetName() string {
+	return "http://arm.com/psa/2.0.0"
+}
+
+func (o PSAProfile2) GetClaims() IClaims {
+	claims, err := newP2Claims()
+
+	if err != nil {
+		// We should never get here as the only source of error inside
+		// newP2Claims() is when attempting to set the Profile field
+		// when it is already set; however, as we're creating a new
+		// claims struct, this cannot happen.
+		panic(err)
+	}
+
+	return claims
+}
 
 // P2Claims are associated with profile "http://arm.com/psa/2.0.0"
 type P2Claims struct {
@@ -302,4 +322,10 @@ func (c P2Claims) GetConfig() ([]byte, error) { //nolint:gocritic
 
 func (c P2Claims) GetHashAlgID() (string, error) { //nolint:gocritic
 	return "", fmt.Errorf("invalid GetHashAlgID invoked on p2 claims")
+}
+
+func init() {
+	if err := RegisterProfile(PSAProfile2{}); err != nil {
+		panic(err)
+	}
 }
