@@ -1,4 +1,4 @@
-// Copyright 2021-2022 Contributors to the Veraison project.
+// Copyright 2021-2024 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
 package psatoken
@@ -6,7 +6,6 @@ package psatoken
 import (
 	"errors"
 	"fmt"
-	"reflect"
 )
 
 // IClaims provides a uniform interface for dealing with claims in all supported
@@ -56,136 +55,12 @@ type IClaims interface {
 }
 
 func NewClaims(profile string) (IClaims, error) {
-	switch profile {
-	case CcaProfile:
-		return newCcaPlatformClaims()
-	case PsaProfile1:
-		includeProfileClaim := true
-		return newP1Claims(includeProfileClaim)
-	case PsaProfile2:
-		return newP2Claims()
-	default:
+	entry, ok := profilesRegister[profile]
+	if !ok {
 		return nil, fmt.Errorf("unsupported profile %q", profile)
 	}
-}
 
-func DecodeClaims(buf []byte) (IClaims, error) {
-
-	ccaPlat := &CcaPlatformClaims{}
-
-	err3 := ccaPlat.FromCBOR(buf)
-	if err3 == nil {
-		return ccaPlat, nil
-	}
-
-	p2 := &P2Claims{}
-
-	err2 := p2.FromCBOR(buf)
-	if err2 == nil {
-		return p2, nil
-	}
-
-	p1 := &P1Claims{}
-
-	err1 := p1.FromCBOR(buf)
-	if err1 == nil {
-		return p1, nil
-	}
-
-	return nil, fmt.Errorf("decode failed for all CcaPlatform (%v), p1 (%v) and p2 (%v)", err3, err1, err2)
-}
-
-func DecodeUnvalidatedClaims(buf []byte) (IClaims, error) {
-
-	ccaPlat := &CcaPlatformClaims{}
-	p2 := &P2Claims{}
-	p1 := &P1Claims{}
-
-	err3 := ccaPlat.FromUnvalidatedCBOR(buf)
-	err2 := p2.FromUnvalidatedCBOR(buf)
-	err1 := p1.FromUnvalidatedCBOR(buf)
-
-	if err1 != nil || err2 != nil || err3 != nil {
-		return nil, fmt.Errorf("decode failed for some of CcaPlatform (%v), p1 (%v) and p2 (%v)", err3, err1, err2)
-	}
-
-	return pickBestMatch(ccaPlat, p2, p1)
-}
-
-func DecodeJSONClaims(buf []byte) (IClaims, error) {
-
-	ccaPlat := &CcaPlatformClaims{}
-
-	err3 := ccaPlat.FromJSON(buf)
-	if err3 == nil {
-		return ccaPlat, nil
-	}
-
-	p2 := &P2Claims{}
-
-	err2 := p2.FromJSON(buf)
-	if err2 == nil {
-		return p2, nil
-	}
-
-	p1 := &P1Claims{}
-
-	err1 := p1.FromJSON(buf)
-	if err1 == nil {
-		return p1, nil
-	}
-
-	return nil, fmt.Errorf("JSON decode failed for all CcaPlatform (%v), p1 (%v) and p2 (%v)", err3, err1, err2)
-}
-
-func DecodeUnvalidatedJSONClaims(buf []byte) (IClaims, error) {
-
-	ccaPlat := &CcaPlatformClaims{}
-	p2 := &P2Claims{}
-	p1 := &P1Claims{}
-
-	err3 := ccaPlat.FromUnvalidatedJSON(buf)
-	err2 := p2.FromUnvalidatedJSON(buf)
-	err1 := p1.FromUnvalidatedJSON(buf)
-
-	if err1 != nil || err2 != nil || err3 != nil {
-		return nil, fmt.Errorf("decode failed for some of CcaPlatform (%v), p1 (%v) and p2 (%v)", err3, err1, err2)
-	}
-
-	return pickBestMatch(ccaPlat, p2, p1)
-}
-
-func pickBestMatch(claims ...IClaims) (IClaims, error) {
-	if len(claims) < 1 {
-		return nil, errors.New("must specify at least one set of claims")
-	}
-
-	selected := claims[0]
-	selectedCount := countNonNilFields(claims[0])
-
-	for _, c := range claims[1:] {
-		count := countNonNilFields(c)
-		if count > selectedCount {
-			selected = c
-			selectedCount = count
-		}
-	}
-
-	return selected, nil
-}
-
-func countNonNilFields(s IClaims) int {
-	sVal := reflect.ValueOf(s).Elem()
-
-	count := 0
-
-	for i := 0; i < sVal.NumField(); i++ {
-		if !sVal.Field(i).IsZero() {
-			count++
-		}
-	}
-
-	return count
+	return entry.Profile.GetClaims(), nil
 }
 
 func validate(c IClaims, profile string) error {

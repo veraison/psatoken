@@ -1,4 +1,4 @@
-// Copyright 2021-2022 Contributors to the Veraison project.
+// Copyright 2021-2024 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
 package psatoken
@@ -160,7 +160,7 @@ func TestEvidence_FromCOSE_empty_claims(t *testing.T) {
 
 	err := e.FromCOSE(tv)
 
-	expectedErr := `failed CBOR decoding of PSA claims: decode failed for all CcaPlatform (CBOR decoding of CCA platform claims failed: EOF), p1 (CBOR decoding of PSA claims failed: EOF) and p2 (CBOR decoding of PSA claims failed: EOF)`
+	expectedErr := `failed CBOR decoding of PSA claims: EOF`
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -178,7 +178,7 @@ func TestEvidence_FromCOSE_bad_claims_unknown_profile(t *testing.T) {
 
 	err := e.FromCOSE(tv)
 
-	expectedErr := `failed CBOR decoding of PSA claims: decode failed for all CcaPlatform (validation of CCA platform claims failed: wrong profile: expecting "http://arm.com/CCA-SSD/1.0.0", got "http://arm.com/psa/3.0.0"), p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: wrong profile: expecting "http://arm.com/psa/2.0.0", got "http://arm.com/psa/3.0.0")`
+	expectedErr := `failed CBOR decoding of PSA claims: unknown profile: "http://arm.com/psa/3.0.0"`
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -195,13 +195,19 @@ func TestEvidence_FromUnvalidatedCOSE(t *testing.T) {
 		{[]byte{
 			0xd2, 0x84, 0x43, 0xa1, 0x01, 0x26, 0xa0, 0x40, 0x44, 0xde, 0xad,
 			0xbe, 0xef,
-		}, `failed CBOR decoding of PSA claims: decode failed for some of CcaPlatform (CBOR decoding of CCA platform claims failed: EOF), p1 (CBOR decoding of PSA claims failed: EOF) and p2 (CBOR decoding of PSA claims failed: EOF)`},
+		}, `failed CBOR decoding of PSA claims: EOF`},
 		{[]byte{
 			0xd2, 0x84, 0x43, 0xa1, 0x01, 0x26, 0xa0, 0x58, 0x1e, 0xa1, 0x19, 0x01,
 			0x09, 0x78, 0x18, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x61, 0x72,
 			0x6d, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x73, 0x61, 0x2f, 0x33, 0x2e,
 			0x30, 0x2e, 0x30, 0x44, 0xde, 0xad, 0xbe, 0xef,
-		}, ""},
+		}, `failed CBOR decoding of PSA claims: unknown profile: "http://arm.com/psa/3.0.0"`},
+		{[]byte{
+			0xd2, 0x84, 0x43, 0xa1, 0x01, 0x26, 0xa0, 0x58, 0x1e, 0xa1, 0x19, 0x01,
+			0x09, 0x78, 0x18, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x61, 0x72,
+			0x6d, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x73, 0x61, 0x2f, 0x32, 0x2e,
+			0x30, 0x2e, 0x30, 0x44, 0xde, 0xad, 0xbe, 0xef,
+		}, ``},
 	}
 
 	e := Evidence{}

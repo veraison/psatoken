@@ -1,4 +1,4 @@
-// Copyright 2021-2022 Contributors to the Veraison project.
+// Copyright 2021-2024 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
 package psatoken
@@ -22,7 +22,7 @@ func Test_DecodeClaims_p1_ok(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv)
-		c, err := DecodeClaims(buf)
+		c, err := DecodeClaimsFromCBOR(buf)
 
 		assert.NoError(t, err)
 
@@ -39,9 +39,9 @@ func Test_DecodeClaims_p1_failure(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv)
-		_, err := DecodeClaims(buf)
+		_, err := DecodeClaimsFromCBOR(buf)
 
-		expectedError := `decode failed for all CcaPlatform (validation of CCA platform claims failed: validating profile: missing mandatory claim), p1 (validation of PSA claims failed: validating psa-nonce: missing mandatory claim) and p2 (validation of PSA claims failed: validating profile: missing mandatory claim)`
+		expectedError := `validating psa-nonce: missing mandatory claim`
 
 		assert.EqualError(t, err, expectedError)
 	}
@@ -56,7 +56,7 @@ func Test_DecodeClaims_p2_ok(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv)
-		c, err := DecodeClaims(buf)
+		c, err := DecodeClaimsFromCBOR(buf)
 
 		assert.NoError(t, err)
 
@@ -73,9 +73,9 @@ func Test_DecodeClaims_p2_failure(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv)
-		_, err := DecodeClaims(buf)
+		_, err := DecodeClaimsFromCBOR(buf)
 
-		expectedError := `decode failed for all CcaPlatform (validation of CCA platform claims failed: wrong profile: expecting "http://arm.com/CCA-SSD/1.0.0", got "http://arm.com/psa/2.0.0"), p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: validating psa-nonce: missing mandatory claim)`
+		expectedError := `validating psa-nonce: missing mandatory claim`
 
 		assert.EqualError(t, err, expectedError)
 	}
@@ -89,7 +89,7 @@ func Test_DecodeClaims_CcaPlatform_ok(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv)
-		c, err := DecodeClaims(buf)
+		c, err := DecodeClaimsFromCBOR(buf)
 
 		assert.NoError(t, err)
 
@@ -106,9 +106,9 @@ func Test_DecodeClaims_CcaPlatform_failure(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv)
-		_, err := DecodeClaims(buf)
+		_, err := DecodeClaimsFromCBOR(buf)
 
-		expectedError := `decode failed for all CcaPlatform (validation of CCA platform claims failed: validating psa-nonce: missing mandatory claim), p1 (validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim) and p2 (validation of PSA claims failed: wrong profile: expecting "http://arm.com/psa/2.0.0", got "http://arm.com/CCA-SSD/1.0.0")`
+		expectedError := `validating psa-nonce: missing mandatory claim`
 
 		assert.EqualError(t, err, expectedError)
 	}
@@ -294,7 +294,7 @@ func Test_DecodeJSONClaims_P2(t *testing.T) {
 	buf, err := os.ReadFile("testvectors/json/test-token-valid-minimalist-p2.json")
 	require.NoError(t, err)
 
-	c, err := DecodeJSONClaims(buf)
+	c, err := DecodeClaimsFromJSON(buf)
 	assert.NoError(t, err)
 	actualProfile, err := c.GetProfile()
 	assert.NoError(t, err)
@@ -305,7 +305,7 @@ func Test_DecodeJSONClaims_P1(t *testing.T) {
 	buf, err := os.ReadFile("testvectors/json/test-token-valid-minimalist-p1.json")
 	require.NoError(t, err)
 
-	c, err := DecodeJSONClaims(buf)
+	c, err := DecodeClaimsFromJSON(buf)
 	assert.NoError(t, err)
 	actualProfile, err := c.GetProfile()
 	assert.NoError(t, err)
@@ -316,7 +316,7 @@ func Test_DecodeJSONClaims_CcaPlatform(t *testing.T) {
 	buf, err := os.ReadFile("testvectors/json/ccatoken/test-token-valid-full.json")
 	require.NoError(t, err)
 
-	c, err := DecodeJSONClaims(buf)
+	c, err := DecodeClaimsFromJSON(buf)
 	assert.NoError(t, err)
 	actualProfile, err := c.GetProfile()
 	assert.NoError(t, err)
@@ -330,7 +330,7 @@ func Test_DecodeUnvalidatedJSONClaims(t *testing.T) {
 	}
 	tvs := []TestVector{
 		// valid
-		{"testvectors/json/test-token-valid-minimalist-p1.json", &P2Claims{}},
+		{"testvectors/json/test-token-valid-minimalist-p1.json", &P1Claims{}},
 		{"testvectors/json/test-token-valid-minimalist-p2.json", &P2Claims{}},
 		{"testvectors/json/ccatoken/test-token-valid-full.json", &CcaPlatformClaims{}},
 
@@ -349,7 +349,7 @@ func Test_DecodeUnvalidatedJSONClaims(t *testing.T) {
 		buf, err := os.ReadFile(tv.Path)
 		require.NoError(t, err)
 
-		v, err := DecodeUnvalidatedJSONClaims(buf)
+		v, err := DecodeUnvalidatedClaimsFromJSON(buf)
 
 		assert.NoError(t, err)
 		assert.IsType(t, tv.Expected, v)

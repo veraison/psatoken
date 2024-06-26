@@ -1,4 +1,4 @@
-// Copyright 2021-2022 Contributors to the Veraison project.
+// Copyright 2021-2024 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 
 package psatoken
@@ -68,7 +68,7 @@ func (e *Evidence) FromCOSE(cwt []byte) error {
 		return fmt.Errorf("failed CBOR decoding for CWT: %w", err)
 	}
 
-	if e.Claims, err = DecodeClaims(e.message.Payload); err != nil {
+	if e.Claims, err = DecodeClaimsFromCBOR(e.message.Payload); err != nil {
 		return fmt.Errorf("failed CBOR decoding of PSA claims: %w", err)
 	}
 
