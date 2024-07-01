@@ -12,10 +12,9 @@ import (
 )
 
 func mustBuildValidP2Claims(t *testing.T, includeOptional bool) IClaims {
-	c, err := newP2Claims()
-	require.NoError(t, err)
+	c := newP2Claims()
 
-	err = c.SetClientID(testClientIDSPE)
+	err := c.SetClientID(testClientIDSPE)
 	require.NoError(t, err)
 
 	err = c.SetSecurityLifeCycle(testSecurityLifecycleSecured)
@@ -48,8 +47,7 @@ func mustBuildValidP2Claims(t *testing.T, includeOptional bool) IClaims {
 }
 
 func Test_NewP2Claims_ok(t *testing.T) {
-	c, err := newP2Claims()
-	assert.NoError(t, err)
+	c := newP2Claims()
 
 	expected := Profile2Name
 
@@ -73,12 +71,11 @@ func Test_P2Claims_Validate_mandatory_only_claims(t *testing.T) {
 }
 
 func Test_P2Claims_ToCBOR_invalid(t *testing.T) {
-	c, err := newP2Claims()
-	require.NoError(t, err)
+	c := newP2Claims()
 
 	expectedErr := `validation of PSA claims failed: validating security lifecycle: missing mandatory claim`
 
-	_, err = c.ToCBOR()
+	_, err := c.ToCBOR()
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -110,7 +107,7 @@ func Test_P2Claims_FromCBOR_bad_input(t *testing.T) {
 
 	expectedErr := "CBOR decoding of PSA claims failed: unexpected EOF"
 
-	var c P2Claims
+	c := newP2Claims()
 	err := c.FromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
@@ -121,7 +118,7 @@ func Test_P2Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 
 	expectedErr := "validation of PSA claims failed: validating nonce: missing mandatory claim"
 
-	var c P2Claims
+	c := newP2Claims()
 	err := c.FromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
@@ -130,9 +127,9 @@ func Test_P2Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 func Test_P2Claims_FromCBOR_invalid_multi_nonce(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedP2ClaimsInvalidMultiNonce)
 
-	expectedErr := "validation of PSA claims failed: validating nonce: wrong syntax for claim: got 2 nonces, want 1"
+	expectedErr := "validation of PSA claims failed: validating nonce: wrong syntax: got 2 nonces, want 1"
 
-	var c P2Claims
+	c := newP2Claims()
 	err := c.FromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
@@ -141,7 +138,7 @@ func Test_P2Claims_FromCBOR_invalid_multi_nonce(t *testing.T) {
 func Test_P2Claims_FromCBOR_ok_mandatory_only(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedP2ClaimsMandatoryOnly)
 
-	var c P2Claims
+	c := newP2Claims()
 	err := c.FromCBOR(buf)
 	assert.NoError(t, err)
 
@@ -207,12 +204,11 @@ func Test_P2Claims_Validate_negatives(t *testing.T) {
 }
 
 func Test_P2Claims_SetSecurityLifecycle_invalid(t *testing.T) {
-	c, err := newP2Claims()
-	require.NoError(t, err)
+	c := newP2Claims()
 
-	expectedErr := `wrong syntax for claim: value 65535 is invalid`
+	expectedErr := `wrong syntax: value 65535 is invalid`
 
-	err = c.SetSecurityLifeCycle(0xffff)
+	err := c.SetSecurityLifeCycle(0xffff)
 	assert.EqualError(t, err, expectedErr)
 }
 
@@ -227,7 +223,7 @@ func Test_P2Claims_FromJSON_positives(t *testing.T) {
 		buf, err := os.ReadFile(fn)
 		require.NoError(t, err)
 
-		var claimsSet P2Claims
+		claimsSet := newP2Claims()
 
 		err = claimsSet.FromJSON(buf)
 		assert.NoError(t, err, "test vector %d failed", i)
@@ -283,7 +279,7 @@ func TestP2Claims_FromJSON_invalid_json(t *testing.T) {
 
 	expectedErr := `JSON decoding of PSA claims failed: unexpected end of JSON input`
 
-	var c P2Claims
+	c := newP2Claims()
 
 	err := c.FromJSON(tv)
 	assert.EqualError(t, err, expectedErr)

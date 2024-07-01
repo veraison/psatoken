@@ -86,8 +86,8 @@ var (
 		4, 4, 4, 4, 4, 4, 4, 4,
 		4, 4, 4, 4, 4, 4, 4, 4,
 	}
-	testSoftwareComponents = []SwComponent{
-		{
+	testSoftwareComponents = []ISwComponent{
+		&SwComponent{
 			MeasurementValue: &testMeasurementValue,
 			SignerID:         &testSignerID,
 		},
@@ -126,9 +126,15 @@ func loadJSONTestVectorFromFile(fn string, profile string) (IClaims, error) {
 
 	switch profile {
 	case Profile1Name:
-		p = &P1Claims{}
+		p = &P1Claims{
+			SwComponents:     &SwComponents[*SwComponent]{},
+			CanonicalProfile: Profile1Name,
+		}
 	case Profile2Name:
-		p = &P2Claims{}
+		p = &P2Claims{
+			SwComponents:     &SwComponents[*SwComponent]{},
+			CanonicalProfile: Profile2Name,
+		}
 	}
 
 	err = json.Unmarshal(buf, p)
@@ -207,7 +213,7 @@ func validateNegatives(t *testing.T, profile string) {
 		// 3
 		{
 			fPath: "testvectors/json/test-security-lifecycle-invalid-state.json",
-			eStr:  `validating security lifecycle: wrong syntax for claim: value 65535 is invalid`,
+			eStr:  `validating security lifecycle: wrong syntax: value 65535 is invalid`,
 		},
 		// 4
 		{
@@ -217,12 +223,12 @@ func validateNegatives(t *testing.T, profile string) {
 		// 5
 		{
 			fPath: "testvectors/json/test-implementation-id-invalid-short.json",
-			eStr:  `validating implementation id: wrong syntax for claim: invalid length 4 (MUST be 32 bytes)`,
+			eStr:  `validating implementation id: wrong syntax: invalid length 4 (MUST be 32 bytes)`,
 		},
 		// 6
 		{
 			fPath: "testvectors/json/test-implementation-id-invalid-long.json",
-			eStr:  `validating implementation id: wrong syntax for claim: invalid length 34 (MUST be 32 bytes)`,
+			eStr:  `validating implementation id: wrong syntax: invalid length 34 (MUST be 32 bytes)`,
 		},
 		// 7
 		{
@@ -232,19 +238,19 @@ func validateNegatives(t *testing.T, profile string) {
 		// 8
 		{
 			fPath:  "testvectors/json/test-boot-seed-invalid-short.json",
-			eStr:   `validating boot seed: wrong syntax for claim: invalid length 4 (MUST be 32 bytes)`,
+			eStr:   `validating boot seed: wrong syntax: invalid length 4 (MUST be 32 bytes)`,
 			p1Only: true,
 		},
 		// 9
 		{
 			fPath:  "testvectors/json/test-boot-seed-invalid-long.json",
-			eStr:   `validating boot seed: wrong syntax for claim: invalid length 34 (MUST be 32 bytes)`,
+			eStr:   `validating boot seed: wrong syntax: invalid length 34 (MUST be 32 bytes)`,
 			p1Only: true,
 		},
 		// 10
 		{
 			fPath: "testvectors/json/test-hardware-version-invalid.json",
-			eStr:  `validating certification reference: wrong syntax for claim: MUST be in EAN-13`,
+			eStr:  `validating certification reference: wrong syntax: MUST be in EAN-13`,
 		},
 		// 11
 		{
@@ -254,12 +260,12 @@ func validateNegatives(t *testing.T, profile string) {
 		// 12
 		{
 			fPath: "testvectors/json/test-nonce-invalid-short.json",
-			eStr:  `validating nonce: wrong syntax for claim: length 4 (hash MUST be 32, 48 or 64 bytes)`,
+			eStr:  `validating nonce: wrong syntax: length 4 (hash MUST be 32, 48 or 64 bytes)`,
 		},
 		// 13
 		{
 			fPath: "testvectors/json/test-nonce-invalid-long.json",
-			eStr:  `validating nonce: wrong syntax for claim: length 65 (hash MUST be 32, 48 or 64 bytes)`,
+			eStr:  `validating nonce: wrong syntax: length 65 (hash MUST be 32, 48 or 64 bytes)`,
 		},
 		// 14
 		{
@@ -269,39 +275,39 @@ func validateNegatives(t *testing.T, profile string) {
 		// 15
 		{
 			fPath: "testvectors/json/test-instance-id-invalid-short.json",
-			eStr:  `validating instance id: wrong syntax for claim: invalid length 32 (MUST be 33 bytes)`,
+			eStr:  `validating instance id: wrong syntax: invalid length 32 (MUST be 33 bytes)`,
 		},
 		// 16
 		{
 			fPath: "testvectors/json/test-instance-id-invalid-long.json",
-			eStr:  `validating instance id: wrong syntax for claim: invalid length 34 (MUST be 33 bytes)`,
+			eStr:  `validating instance id: wrong syntax: invalid length 34 (MUST be 33 bytes)`,
 		},
 		// 17
 		{
 			fPath: "testvectors/json/test-sw-component-measurement-value-invalid-missing.json",
-			eStr:  `validating software components: failed at index 0: missing mandatory measurement-value`,
+			eStr:  `validating software components: failed at index 0: measurement value: missing mandatory field`,
 		},
 		// 18
 		{
 			fPath: "testvectors/json/test-sw-component-signer-id-invalid-missing.json",
-			eStr:  `validating software components: failed at index 1: missing mandatory signer-id`,
+			eStr:  `validating software components: failed at index 1: signer ID: missing mandatory field`,
 		},
 		// 19
 		{
 			fPath: "testvectors/json/test-sw-component-measurement-value-invalid-short.json",
 			// nolint:lll
-			eStr: `validating software components: failed at index 0: invalid measurement-value: wrong syntax for claim: length 4 (hash MUST be 32, 48 or 64 bytes)`,
+			eStr: `validating software components: failed at index 0: measurement value: wrong syntax: length 4 (hash MUST be 32, 48 or 64 bytes)`,
 		},
 		// 20
 		{
 			fPath: "testvectors/json/test-sw-component-signer-id-invalid-short.json",
 			// nolint:lll
-			eStr: `validating software components: failed at index 1: invalid signer-id: wrong syntax for claim: length 4 (hash MUST be 32, 48 or 64 bytes)`,
+			eStr: `validating software components: failed at index 1: signer ID: wrong syntax: length 4 (hash MUST be 32, 48 or 64 bytes)`,
 		},
 		// 21
 		{
 			fPath: "testvectors/json/test-instance-id-invalid-euid-type.json",
-			eStr:  `validating instance id: wrong syntax for claim: invalid EUID type (MUST be RAND=0x01)`,
+			eStr:  `validating instance id: wrong syntax: invalid EUID type (MUST be RAND=0x01)`,
 		},
 		// 22
 		{
@@ -316,34 +322,41 @@ func validateNegatives(t *testing.T, profile string) {
 		},
 		// 24
 		{
-			fPath: "testvectors/json/test-sw-components-empty.json",
-			eStr:  `validating software components: wrong syntax for claim: there MUST be at least one entry`,
+			fPath:  "testvectors/json/test-sw-components-empty.json",
+			eStr:   `validating software components: missing mandatory claim (MUST have at least one sw component)`,
+			p2Only: true,
 		},
 		// 25
 		{
-			fPath: "testvectors/json/test-sw-components-invalid-combo.json",
-			// nolint:lll
-			eStr:   `validating software components: wrong syntax for claim: psa-no-sw-measurement and psa-software-components cannot be present at the same time`,
+			fPath:  "testvectors/json/test-sw-components-empty.json",
+			eStr:   `validating software components: missing mandatory claim (MUST have at least one sw component or no-sw-measurements set)`,
 			p1Only: true,
 		},
 		// 26
 		{
-			fPath: "testvectors/json/test-vsi-invalid-empty.json",
-			eStr:  `validating verification service indicator: wrong syntax for claim: empty string`,
+			fPath: "testvectors/json/test-sw-components-invalid-combo.json",
+			// nolint:lll
+			eStr:   `validating software components: wrong syntax: psa-no-sw-measurement and psa-software-components cannot be present at the same time`,
+			p1Only: true,
 		},
 		// 27
 		{
-			fPath:  "testvectors/json/test-boot-seed-invalid-short.json",
-			eStr:   `validating boot seed: wrong syntax for claim: invalid length 4 (MUST be between 8 and 32 bytes)`,
-			p2Only: true,
+			fPath: "testvectors/json/test-vsi-invalid-empty.json",
+			eStr:  `validating verification service indicator: wrong syntax: empty string`,
 		},
 		// 28
 		{
-			fPath:  "testvectors/json/test-boot-seed-invalid-long.json",
-			eStr:   `validating boot seed: wrong syntax for claim: invalid length 34 (MUST be between 8 and 32 bytes)`,
+			fPath:  "testvectors/json/test-boot-seed-invalid-short.json",
+			eStr:   `validating boot seed: wrong syntax: invalid length 4 (MUST be between 8 and 32 bytes)`,
 			p2Only: true,
 		},
 		// 29
+		{
+			fPath:  "testvectors/json/test-boot-seed-invalid-long.json",
+			eStr:   `validating boot seed: wrong syntax: invalid length 34 (MUST be between 8 and 32 bytes)`,
+			p2Only: true,
+		},
+		// 30
 		{
 			fPath:  "testvectors/json/test-boot-seed-invalid-missing.json",
 			eStr:   `validating boot seed: missing mandatory claim`,

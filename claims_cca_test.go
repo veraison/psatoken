@@ -16,10 +16,9 @@ var (
 )
 
 func mustBuildValidCCAPlatformClaims(t *testing.T, includeOptional bool) ICCAClaims {
-	c, err := newCCAPlatformClaims()
-	require.NoError(t, err)
+	c := newCCAPlatformClaims()
 
-	err = c.SetSecurityLifeCycle(testCCALifeCycleSecured)
+	err := c.SetSecurityLifeCycle(testCCALifeCycleSecured)
 	require.NoError(t, err)
 
 	err = c.SetImplID(testImplementationID)
@@ -49,8 +48,7 @@ func mustBuildValidCCAPlatformClaims(t *testing.T, includeOptional bool) ICCACla
 }
 
 func Test_NewCCAPlatformClaims_ok(t *testing.T) {
-	c, err := newCCAPlatformClaims()
-	assert.NoError(t, err)
+	c := newCCAPlatformClaims()
 
 	expected := CCAProfileName
 
@@ -74,7 +72,7 @@ func Test_CCAPlatformClaims_Validate_mandatory_only_claims(t *testing.T) {
 }
 
 func Test_CCAPlatformClaims_Set_NonValid_Claims(t *testing.T) {
-	var c CCAPlatformClaims
+	c := newCCAPlatformClaims()
 
 	err := c.SetBootSeed([]byte("123"))
 	expectedErr := "claim not in profile: boot seed"
@@ -93,16 +91,16 @@ func Test_CCAPlatformClaims_Set_NonValid_Claims(t *testing.T) {
 	assert.EqualError(t, err, expectedErr)
 
 	err = c.SetHashAlgID("non existent")
-	expectedErr = "wrong syntax for claim: wrong syntax"
+	expectedErr = "wrong syntax: wrong syntax"
 	assert.EqualError(t, err, expectedErr)
 
 	err = c.SetHashAlgID("")
-	expectedErr = "wrong syntax for claim: empty string"
+	expectedErr = "wrong syntax: empty string"
 	assert.EqualError(t, err, expectedErr)
 }
 
 func Test_CCAPlatformClaims_Get_NonValid_Claims(t *testing.T) {
-	var c CCAPlatformClaims
+	c := newCCAPlatformClaims()
 
 	_, err := c.GetBootSeed()
 	expectedErr := "claim not in profile: boot seed"
@@ -119,12 +117,11 @@ func Test_CCAPlatformClaims_Get_NonValid_Claims(t *testing.T) {
 }
 
 func Test_CCAPlatform_Claims_ToCBOR_invalid(t *testing.T) {
-	c, err := newCCAPlatformClaims()
-	require.NoError(t, err)
+	c := newCCAPlatformClaims()
 
 	expectedErr := `validation of CCA platform claims failed: validating security lifecycle: missing mandatory claim`
 
-	_, err = c.ToCBOR()
+	_, err := c.ToCBOR()
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -154,7 +151,8 @@ func Test_CCAPlatform_Claims_ToCBOR_mandatory_only_claims(t *testing.T) {
 func Test_CCAPlatform_FromCBOR_ok_mandatory_only(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedCcaPlatformClaimsMandatoryOnly)
 
-	var c CCAPlatformClaims
+	c := newCCAPlatformClaims()
+
 	err := c.FromCBOR(buf)
 	assert.NoError(t, err)
 
@@ -197,7 +195,8 @@ func Test_CCAPlatform_Claims_FromCBOR_bad_input(t *testing.T) {
 
 	expectedErr := "CBOR decoding of CCA platform claims failed: unexpected EOF"
 
-	var c CCAPlatformClaims
+	c := newCCAPlatformClaims()
+
 	err := c.FromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
@@ -208,7 +207,8 @@ func Test_CCAPlatform_Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 
 	expectedErr := "validation of CCA platform claims failed: validating nonce: missing mandatory claim"
 
-	var c CCAPlatformClaims
+	c := newCCAPlatformClaims()
+
 	err := c.FromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
@@ -217,9 +217,10 @@ func Test_CCAPlatform_Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 func Test_CCAPlatform_Claims_FromCBOR_invalid_multi_nonce(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedCcaPlatformClaimsInvalidMultiNonce)
 
-	expectedErr := "validation of CCA platform claims failed: validating nonce: wrong syntax for claim: got 2 nonces, want 1"
+	expectedErr := "validation of CCA platform claims failed: validating nonce: wrong syntax: got 2 nonces, want 1"
 
-	var c CCAPlatformClaims
+	c := newCCAPlatformClaims()
+
 	err := c.FromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
@@ -274,7 +275,7 @@ func Test_CCAPlatform_FromJSON_ok(t *testing.T) {
 		"cca-platform-hash-algo-id": "sha-256"
 		}`
 
-	var c CCAPlatformClaims
+	c := newCCAPlatformClaims()
 
 	err := c.FromJSON([]byte(tv))
 	assert.NoError(t, err)
@@ -285,7 +286,7 @@ func Test_CCAPlatform_FromJSON_invalid_json(t *testing.T) {
 
 	expectedErr := `JSON decoding of CCA platform claims failed: unexpected end of JSON input`
 
-	var c CCAPlatformClaims
+	c := newCCAPlatformClaims()
 
 	err := c.FromJSON(tv)
 	assert.EqualError(t, err, expectedErr)

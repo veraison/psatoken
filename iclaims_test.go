@@ -127,11 +127,9 @@ func Test_NewClaims_profile_unknown(t *testing.T) {
 }
 
 func makeIClaims(t *testing.T) []IClaims {
-	c1, err := newP1Claims(true)
-	require.NoError(t, err)
+	c1 := newP1Claims(true)
 
-	c2, err := newP2Claims()
-	require.NoError(t, err)
+	c2 := newP2Claims()
 
 	return []IClaims{c1, c2}
 }
@@ -139,7 +137,7 @@ func makeIClaims(t *testing.T) []IClaims {
 func Test_IClaims_SetSecurityLifecycle_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
-	expectedErr := `wrong syntax for claim: value 65535 is invalid`
+	expectedErr := `wrong syntax: value 65535 is invalid`
 
 	for _, c := range tv {
 		err := c.SetSecurityLifeCycle(0xffff)
@@ -150,7 +148,7 @@ func Test_IClaims_SetSecurityLifecycle_invalid(t *testing.T) {
 func Test_IClaims_SetImplID_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
-	expectedErr := `wrong syntax for claim: invalid length 0 (MUST be 32 bytes)`
+	expectedErr := `wrong syntax: invalid length 0 (MUST be 32 bytes)`
 
 	for _, c := range tv {
 		err := c.SetImplID([]byte{})
@@ -161,7 +159,7 @@ func Test_IClaims_SetImplID_invalid(t *testing.T) {
 func Test_IClaims_SetInstID_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
-	expectedErr := `wrong syntax for claim: invalid length 0 (MUST be 33 bytes)`
+	expectedErr := `wrong syntax: invalid length 0 (MUST be 33 bytes)`
 
 	for _, c := range tv {
 		err := c.SetInstID([]byte{})
@@ -172,7 +170,7 @@ func Test_IClaims_SetInstID_invalid(t *testing.T) {
 func Test_IClaims_SetNonce_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
-	expectedErr := `wrong syntax for claim: length 0 (hash MUST be 32, 48 or 64 bytes)`
+	expectedErr := `wrong syntax: length 0 (hash MUST be 32, 48 or 64 bytes)`
 
 	for _, c := range tv {
 		err := c.SetNonce([]byte{})
@@ -184,8 +182,8 @@ func Test_IClaims_SetBootSeed_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
 	expectedErrs := []string{
-		`wrong syntax for claim: invalid length 0 (MUST be 32 bytes)`,
-		`wrong syntax for claim: invalid length 0 (MUST be between 8 and 32 bytes)`,
+		`wrong syntax: invalid length 0 (MUST be 32 bytes)`,
+		`wrong syntax: invalid length 0 (MUST be between 8 and 32 bytes)`,
 	}
 
 	for i, c := range tv {
@@ -197,7 +195,7 @@ func Test_IClaims_SetBootSeed_invalid(t *testing.T) {
 func Test_IClaims_SetCertificationReference_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
-	expectedErr := `wrong syntax for claim: MUST be in EAN-13`
+	expectedErr := `wrong syntax: MUST be in EAN-13`
 
 	for _, c := range tv {
 		for _, s := range []string{"", "abc", "123456789012", "1234567890123+1234S"} {
@@ -210,7 +208,7 @@ func Test_IClaims_SetCertificationReference_invalid(t *testing.T) {
 func Test_IClaims_SetVSI_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
-	expectedErr := `wrong syntax for claim: empty string`
+	expectedErr := `wrong syntax: empty string`
 
 	for _, c := range tv {
 		err := c.SetVSI("")
@@ -221,13 +219,13 @@ func Test_IClaims_SetVSI_invalid(t *testing.T) {
 func Test_IClaims_SetSoftwareComponents_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
-	scs := []SwComponent{
-		{
+	scs := []ISwComponent{
+		&SwComponent{
 			SignerID: &testSignerID,
 		},
 	}
 
-	expectedErr := `failed at index 0: missing mandatory measurement-value`
+	expectedErr := `failed at index 0: measurement value: missing mandatory field`
 
 	for _, c := range tv {
 		err := c.SetSoftwareComponents(scs)

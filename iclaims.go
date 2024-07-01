@@ -34,7 +34,7 @@ type IClaims interface {
 	GetImplID() ([]byte, error)
 	GetBootSeed() ([]byte, error)
 	GetCertificationReference() (string, error)
-	GetSoftwareComponents() ([]SwComponent, error)
+	GetSoftwareComponents() ([]ISwComponent, error)
 	GetNonce() ([]byte, error)
 	GetInstID() ([]byte, error)
 	GetVSI() (string, error)
@@ -44,7 +44,7 @@ type IClaims interface {
 	SetImplID([]byte) error
 	SetBootSeed([]byte) error
 	SetCertificationReference(string) error
-	SetSoftwareComponents([]SwComponent) error
+	SetSoftwareComponents([]ISwComponent) error
 	SetNonce([]byte) error
 	SetInstID([]byte) error
 	SetVSI(string) error
