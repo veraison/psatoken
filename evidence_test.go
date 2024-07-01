@@ -227,7 +227,7 @@ func TestEvidence_SetClaims_unknown_profile(t *testing.T) {
 
 	err := evidence.SetClaims(emptyClaims)
 
-	assert.EqualError(t, err, "validation failed: validating psa-security-lifecycle: missing mandatory claim")
+	assert.EqualError(t, err, "validation failed: validating security lifecycle: missing mandatory claim")
 }
 
 func TestEvidence_SetClaims_validation_failed(t *testing.T) {
@@ -238,7 +238,7 @@ func TestEvidence_SetClaims_validation_failed(t *testing.T) {
 
 	err = evidence.SetClaims(tv)
 
-	assert.EqualError(t, err, "validation failed: validating psa-security-lifecycle: missing mandatory claim")
+	assert.EqualError(t, err, "validation failed: validating security lifecycle: missing mandatory claim")
 }
 
 func TestEvidence_SetClaims_ok(t *testing.T) {
@@ -335,7 +335,7 @@ func TestEvidence_sign_and_verify_alg_mismatch(t *testing.T) {
 func TestEvidence_SignUnvalidated(t *testing.T) {
 	tokenSigner := signerFromJWK(t, testECKeyA)
 
-	buf := mustHexDecode(t, testEncodedCcaPlatformClaimsMissingMandatoryNonce)
+	buf := mustHexDecode(t, testEncodedP2ClaimsMissingMandatoryNonce)
 	v, err := DecodeUnvalidatedClaims(buf)
 	require.NoError(t, err)
 

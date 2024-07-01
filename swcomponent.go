@@ -22,7 +22,7 @@ func (sc SwComponent) Validate() error {
 		return errors.New("missing mandatory measurement-value")
 	}
 
-	if err := isPSAHashType(*sc.MeasurementValue); err != nil {
+	if err := ValidatePSAHashType(*sc.MeasurementValue); err != nil {
 		return fmt.Errorf("invalid measurement-value: %w", err)
 	}
 
@@ -30,7 +30,7 @@ func (sc SwComponent) Validate() error {
 		return errors.New("missing mandatory signer-id")
 	}
 
-	if err := isPSAHashType(*sc.SignerID); err != nil {
+	if err := ValidatePSAHashType(*sc.SignerID); err != nil {
 		return fmt.Errorf("invalid signer-id: %w", err)
 	}
 

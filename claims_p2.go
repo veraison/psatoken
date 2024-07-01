@@ -11,13 +11,15 @@ import (
 	"github.com/veraison/eat"
 )
 
-type PSAProfile2 struct{}
+const Profile2Name = "http://arm.com/psa/2.0.0"
 
-func (o PSAProfile2) GetName() string {
-	return "http://arm.com/psa/2.0.0"
+type Profile2 struct{}
+
+func (o Profile2) GetName() string {
+	return Profile2Name
 }
 
-func (o PSAProfile2) GetClaims() IClaims {
+func (o Profile2) GetClaims() IClaims {
 	claims, err := newP2Claims()
 
 	if err != nil {
@@ -57,7 +59,7 @@ func newP2Claims() (IClaims, error) {
 
 // Semantic validation
 func (c P2Claims) Validate() error { //nolint:gocritic
-	return validate(&c, PsaProfile2)
+	return ValidateClaims(&c)
 }
 
 func (c *P2Claims) setProfile() error {
@@ -67,7 +69,7 @@ func (c *P2Claims) setProfile() error {
 
 	p := eat.Profile{}
 
-	if err := p.Set(PsaProfile2); err != nil {
+	if err := p.Set(Profile2Name); err != nil {
 		return err
 	}
 
@@ -77,27 +79,61 @@ func (c *P2Claims) setProfile() error {
 }
 
 func (c *P2Claims) SetClientID(v int32) error {
-	return setClientID(&c.ClientID, &v)
+	// any int32 value is acceptable
+	c.ClientID = &v
+	return nil
 }
 
 func (c *P2Claims) SetSecurityLifeCycle(v uint16) error {
-	return setSecurityLifeCycle(&c.SecurityLifeCycle, &v, PsaProfile2)
+	if err := ValidateSecurityLifeCycle(v); err != nil {
+		return err
+	}
+
+	c.SecurityLifeCycle = &v
+
+	return nil
 }
 
 func (c *P2Claims) SetImplID(v []byte) error {
-	return setImplID(&c.ImplID, &v)
+	if err := ValidateImplID(v); err != nil {
+		return err
+	}
+
+	c.ImplID = &v
+
+	return nil
 }
 
 func (c *P2Claims) SetBootSeed(v []byte) error {
-	return setBootSeed(&c.BootSeed, &v, PsaProfile2)
+	l := len(v)
+	if l < 8 || l > 32 {
+		return fmt.Errorf(
+			"%w: invalid length %d (MUST be between 8 and 32 bytes)",
+			ErrWrongClaimSyntax, l,
+		)
+	}
+
+	c.BootSeed = &v
+
+	return nil
 }
 
 func (c *P2Claims) SetCertificationReference(v string) error {
-	return setCertificationReference(&c.CertificationReference, &v, PsaProfile2)
+	if !CertificationReferenceP1RE.MatchString(v) &&
+		!CertificationReferenceP2RE.MatchString(v) {
+		return fmt.Errorf(
+			"%w: MUST be in EAN-13 or EAN-13+5 format",
+			ErrWrongClaimSyntax,
+		)
+	}
+
+	c.CertificationReference = &v
+
+	return nil
 }
 
 func (c *P2Claims) SetSoftwareComponents(scs []SwComponent) error {
-	if err := isValidSwComponents(scs); err != nil {
+	if err := ValidateSwComponents(scs); err != nil {
 		return err
 	}
 
@@ -107,7 +143,7 @@ func (c *P2Claims) SetSoftwareComponents(scs []SwComponent) error {
 }
 
 func (c *P2Claims) SetNonce(v []byte) error {
-	if err := isPSAHashType(v); err != nil {
+	if err := ValidatePSAHashType(v); err != nil {
 		return err
 	}
 
@@ -123,7 +159,7 @@ func (c *P2Claims) SetNonce(v []byte) error {
 }
 
 func (c *P2Claims) SetInstID(v []byte) error {
-	if err := isValidInstID(v); err != nil {
+	if err := ValidateInstID(v); err != nil {
 		return err
 	}
 
@@ -135,15 +171,13 @@ func (c *P2Claims) SetInstID(v []byte) error {
 }
 
 func (c *P2Claims) SetVSI(v string) error {
-	return setVSI(&c.VSI, &v)
-}
+	if err := ValidateVSI(v); err != nil {
+		return err
+	}
 
-func (c *P2Claims) SetConfig(v []byte) error {
-	return fmt.Errorf("invalid SetConfig invoked on p2 claims")
-}
+	c.VSI = &v
 
-func (c *P2Claims) SetHashAlgID(v string) error {
-	return fmt.Errorf("invalid SetHashAlgID invoked on p2 claims")
+	return nil
 }
 
 // Codecs
@@ -240,41 +274,92 @@ func (c P2Claims) GetProfile() (string, error) { //nolint:gocritic
 		return "", ErrMandatoryClaimMissing
 	}
 
-	return c.Profile.Get()
+	profileString, err := c.Profile.Get()
+	if err != nil {
+		return "", err
+	}
+
+	if profileString != Profile2Name {
+		return "", fmt.Errorf("%w: expecting %q, got %q",
+			ErrWrongProfile, Profile2Name, profileString)
+	}
+
+	return profileString, nil
 }
 
 func (c P2Claims) GetClientID() (int32, error) { //nolint:gocritic
-	return getClientID(c.ClientID)
+	if c.ClientID == nil {
+		return 0, ErrMandatoryClaimMissing
+	}
+
+	return *c.ClientID, nil
 }
 
 func (c P2Claims) GetSecurityLifeCycle() (uint16, error) { //nolint:gocritic
-	return getSecurityLifeCycle(c.SecurityLifeCycle, PsaProfile2)
+	if c.SecurityLifeCycle == nil {
+		return 0, ErrMandatoryClaimMissing
+	}
+
+	if err := ValidateSecurityLifeCycle(*c.SecurityLifeCycle); err != nil {
+		return 0, err
+	}
+
+	return *c.SecurityLifeCycle, nil
 }
 
 func (c P2Claims) GetImplID() ([]byte, error) { //nolint:gocritic
-	return getImplID(c.ImplID)
-}
-
-func (c P2Claims) GetBootSeed() ([]byte, error) { //nolint:gocritic
-	return getBootSeed(c.BootSeed, PsaProfile2)
-}
-
-func (c P2Claims) GetCertificationReference() (string, error) { //nolint:gocritic
-	return getCertificationReference(c.CertificationReference, PsaProfile2)
-}
-
-func (c P2Claims) GetSoftwareComponents() ([]SwComponent, error) { //nolint:gocritic
-	v := c.SwComponents
-
-	if v == nil {
+	if c.ImplID == nil {
 		return nil, ErrMandatoryClaimMissing
 	}
 
-	if err := isValidSwComponents(*v); err != nil {
+	if err := ValidateImplID(*c.ImplID); err != nil {
 		return nil, err
 	}
 
-	return *v, nil
+	return *c.ImplID, nil
+}
+
+func (c P2Claims) GetBootSeed() ([]byte, error) { //nolint:gocritic
+	if c.BootSeed == nil {
+		return nil, ErrOptionalClaimMissing
+	}
+
+	l := len(*c.BootSeed)
+	if l < 8 || l > 32 {
+		return nil, fmt.Errorf(
+			"%w: invalid length %d (MUST be between 8 and 32 bytes)",
+			ErrWrongClaimSyntax, l,
+		)
+	}
+
+	return *c.BootSeed, nil
+}
+
+func (c P2Claims) GetCertificationReference() (string, error) { //nolint:gocritic
+	if c.CertificationReference == nil {
+		return "", ErrOptionalClaimMissing
+	}
+
+	if !CertificationReferenceP2RE.MatchString(*c.CertificationReference) {
+		return "", fmt.Errorf(
+			"%w: MUST be in EAN-13+5 format",
+			ErrWrongClaimSyntax,
+		)
+	}
+
+	return *c.CertificationReference, nil
+}
+
+func (c P2Claims) GetSoftwareComponents() ([]SwComponent, error) { //nolint:gocritic
+	if c.SwComponents == nil {
+		return nil, ErrMandatoryClaimMissing
+	}
+
+	if err := ValidateSwComponents(*c.SwComponents); err != nil {
+		return nil, err
+	}
+
+	return *c.SwComponents, nil
 }
 
 func (c P2Claims) GetNonce() ([]byte, error) { //nolint:gocritic
@@ -291,7 +376,7 @@ func (c P2Claims) GetNonce() ([]byte, error) { //nolint:gocritic
 	}
 
 	n := v.GetI(0)
-	if err := isValidNonce(n); err != nil {
+	if err := ValidateNonce(n); err != nil {
 		return nil, err
 	}
 
@@ -305,7 +390,7 @@ func (c P2Claims) GetInstID() ([]byte, error) { //nolint:gocritic
 		return nil, ErrMandatoryClaimMissing
 	}
 
-	if err := isValidInstID(*v); err != nil {
+	if err := ValidateInstID(*v); err != nil {
 		return nil, err
 	}
 
@@ -313,19 +398,19 @@ func (c P2Claims) GetInstID() ([]byte, error) { //nolint:gocritic
 }
 
 func (c P2Claims) GetVSI() (string, error) { //nolint:gocritic
-	return getVSI(c.VSI)
-}
+	if c.VSI == nil {
+		return "", ErrOptionalClaimMissing
+	}
 
-func (c P2Claims) GetConfig() ([]byte, error) { //nolint:gocritic
-	return nil, fmt.Errorf("invalid GetConfig invoked on p2 claims")
-}
+	if err := ValidateVSI(*c.VSI); err != nil {
+		return "", err
+	}
 
-func (c P2Claims) GetHashAlgID() (string, error) { //nolint:gocritic
-	return "", fmt.Errorf("invalid GetHashAlgID invoked on p2 claims")
+	return *c.VSI, nil
 }
 
 func init() {
-	if err := RegisterProfile(PSAProfile2{}); err != nil {
+	if err := RegisterProfile(Profile2{}); err != nil {
 		panic(err)
 	}
 }

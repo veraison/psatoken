@@ -41,7 +41,6 @@ var (
 	testNotCBOR                  = `6e6f745f63626f720a`
 	testClientIDSPE              = int32(2147483647)
 	testSecurityLifecycleSecured = uint16(SecurityLifecycleSecuredMin)
-	testCcaLifeCycleSecured      = uint16(12288)
 	testConfig                   = []byte{1, 2, 3}
 	testHashAlgID                = "sha-256"
 	testImplementationID         = []byte{
@@ -126,9 +125,9 @@ func loadJSONTestVectorFromFile(fn string, profile string) (IClaims, error) {
 	var p IClaims
 
 	switch profile {
-	case PsaProfile1:
+	case Profile1Name:
 		p = &P1Claims{}
-	case PsaProfile2:
+	case Profile2Name:
 		p = &P2Claims{}
 	}
 
@@ -198,116 +197,116 @@ func validateNegatives(t *testing.T, profile string) {
 		// 1
 		{
 			fPath: "testvectors/json/test-client-id-invalid-missing.json",
-			eStr:  `validating psa-client-id: missing mandatory claim`,
+			eStr:  `validating client id: missing mandatory claim`,
 		},
 		// 2
 		{
 			fPath: "testvectors/json/test-security-lifecycle-invalid-missing.json",
-			eStr:  `validating psa-security-lifecycle: missing mandatory claim`,
+			eStr:  `validating security lifecycle: missing mandatory claim`,
 		},
 		// 3
 		{
 			fPath: "testvectors/json/test-security-lifecycle-invalid-state.json",
-			eStr:  `validating psa-security-lifecycle: wrong syntax for claim: value 65535 is invalid`,
+			eStr:  `validating security lifecycle: wrong syntax for claim: value 65535 is invalid`,
 		},
 		// 4
 		{
 			fPath: "testvectors/json/test-implementation-id-invalid-missing.json",
-			eStr:  `validating psa-implementation-id: missing mandatory claim`,
+			eStr:  `validating implementation id: missing mandatory claim`,
 		},
 		// 5
 		{
 			fPath: "testvectors/json/test-implementation-id-invalid-short.json",
-			eStr:  `validating psa-implementation-id: wrong syntax for claim: invalid length 4 (MUST be 32 bytes)`,
+			eStr:  `validating implementation id: wrong syntax for claim: invalid length 4 (MUST be 32 bytes)`,
 		},
 		// 6
 		{
 			fPath: "testvectors/json/test-implementation-id-invalid-long.json",
-			eStr:  `validating psa-implementation-id: wrong syntax for claim: invalid length 34 (MUST be 32 bytes)`,
+			eStr:  `validating implementation id: wrong syntax for claim: invalid length 34 (MUST be 32 bytes)`,
 		},
 		// 7
 		{
 			fPath: "testvectors/json/test-sw-components-invalid-missing.json",
-			eStr:  `validating psa-software-components: missing mandatory claim`,
+			eStr:  `validating software components: missing mandatory claim`,
 		},
 		// 8
 		{
 			fPath:  "testvectors/json/test-boot-seed-invalid-short.json",
-			eStr:   `validating psa-boot-seed: wrong syntax for claim: invalid length 4 (MUST be 32 bytes)`,
+			eStr:   `validating boot seed: wrong syntax for claim: invalid length 4 (MUST be 32 bytes)`,
 			p1Only: true,
 		},
 		// 9
 		{
 			fPath:  "testvectors/json/test-boot-seed-invalid-long.json",
-			eStr:   `validating psa-boot-seed: wrong syntax for claim: invalid length 34 (MUST be 32 bytes)`,
+			eStr:   `validating boot seed: wrong syntax for claim: invalid length 34 (MUST be 32 bytes)`,
 			p1Only: true,
 		},
 		// 10
 		{
 			fPath: "testvectors/json/test-hardware-version-invalid.json",
-			eStr:  `validating psa-certification-reference: wrong syntax for claim: MUST be in EAN-13`,
+			eStr:  `validating certification reference: wrong syntax for claim: MUST be in EAN-13`,
 		},
 		// 11
 		{
 			fPath: "testvectors/json/test-nonce-invalid-missing.json",
-			eStr:  `validating psa-nonce: missing mandatory claim`,
+			eStr:  `validating nonce: missing mandatory claim`,
 		},
 		// 12
 		{
 			fPath: "testvectors/json/test-nonce-invalid-short.json",
-			eStr:  `validating psa-nonce: wrong syntax for claim: length 4 (psa-hash-type MUST be 32, 48 or 64 bytes)`,
+			eStr:  `validating nonce: wrong syntax for claim: length 4 (hash MUST be 32, 48 or 64 bytes)`,
 		},
 		// 13
 		{
 			fPath: "testvectors/json/test-nonce-invalid-long.json",
-			eStr:  `validating psa-nonce: wrong syntax for claim: length 65 (psa-hash-type MUST be 32, 48 or 64 bytes)`,
+			eStr:  `validating nonce: wrong syntax for claim: length 65 (hash MUST be 32, 48 or 64 bytes)`,
 		},
 		// 14
 		{
 			fPath: "testvectors/json/test-instance-id-invalid-missing.json",
-			eStr:  `validating psa-instance-id: missing mandatory claim`,
+			eStr:  `validating instance id: missing mandatory claim`,
 		},
 		// 15
 		{
 			fPath: "testvectors/json/test-instance-id-invalid-short.json",
-			eStr:  `validating psa-instance-id: wrong syntax for claim: invalid length 32 (MUST be 33 bytes)`,
+			eStr:  `validating instance id: wrong syntax for claim: invalid length 32 (MUST be 33 bytes)`,
 		},
 		// 16
 		{
 			fPath: "testvectors/json/test-instance-id-invalid-long.json",
-			eStr:  `validating psa-instance-id: wrong syntax for claim: invalid length 34 (MUST be 33 bytes)`,
+			eStr:  `validating instance id: wrong syntax for claim: invalid length 34 (MUST be 33 bytes)`,
 		},
 		// 17
 		{
 			fPath: "testvectors/json/test-sw-component-measurement-value-invalid-missing.json",
-			eStr:  `validating psa-software-components: failed at index 0: missing mandatory measurement-value`,
+			eStr:  `validating software components: failed at index 0: missing mandatory measurement-value`,
 		},
 		// 18
 		{
 			fPath: "testvectors/json/test-sw-component-signer-id-invalid-missing.json",
-			eStr:  `validating psa-software-components: failed at index 1: missing mandatory signer-id`,
+			eStr:  `validating software components: failed at index 1: missing mandatory signer-id`,
 		},
 		// 19
 		{
 			fPath: "testvectors/json/test-sw-component-measurement-value-invalid-short.json",
 			// nolint:lll
-			eStr: `validating psa-software-components: failed at index 0: invalid measurement-value: wrong syntax for claim: length 4 (psa-hash-type MUST be 32, 48 or 64 bytes)`,
+			eStr: `validating software components: failed at index 0: invalid measurement-value: wrong syntax for claim: length 4 (hash MUST be 32, 48 or 64 bytes)`,
 		},
 		// 20
 		{
 			fPath: "testvectors/json/test-sw-component-signer-id-invalid-short.json",
 			// nolint:lll
-			eStr: `validating psa-software-components: failed at index 1: invalid signer-id: wrong syntax for claim: length 4 (psa-hash-type MUST be 32, 48 or 64 bytes)`,
+			eStr: `validating software components: failed at index 1: invalid signer-id: wrong syntax for claim: length 4 (hash MUST be 32, 48 or 64 bytes)`,
 		},
 		// 21
 		{
 			fPath: "testvectors/json/test-instance-id-invalid-euid-type.json",
-			eStr:  `validating psa-instance-id: wrong syntax for claim: invalid EUID type (MUST be RAND=0x01)`,
+			eStr:  `validating instance id: wrong syntax for claim: invalid EUID type (MUST be RAND=0x01)`,
 		},
 		// 22
 		{
 			fPath: "testvectors/json/test-sw-component-and-no-sw-measurements-missing.json",
-			eStr:  `validating psa-software-components: missing mandatory claim`,
+			eStr:  `validating software components: missing mandatory claim`,
 		},
 		// 23
 		{
@@ -318,43 +317,43 @@ func validateNegatives(t *testing.T, profile string) {
 		// 24
 		{
 			fPath: "testvectors/json/test-sw-components-empty.json",
-			eStr:  `validating psa-software-components: wrong syntax for claim: there MUST be at least one entry`,
+			eStr:  `validating software components: wrong syntax for claim: there MUST be at least one entry`,
 		},
 		// 25
 		{
 			fPath: "testvectors/json/test-sw-components-invalid-combo.json",
 			// nolint:lll
-			eStr:   `validating psa-software-components: wrong syntax for claim: psa-no-sw-measurement and psa-software-components cannot be present at the same time`,
+			eStr:   `validating software components: wrong syntax for claim: psa-no-sw-measurement and psa-software-components cannot be present at the same time`,
 			p1Only: true,
 		},
 		// 26
 		{
 			fPath: "testvectors/json/test-vsi-invalid-empty.json",
-			eStr:  `validating psa-verification-service-indicator: wrong syntax for claim: empty string`,
+			eStr:  `validating verification service indicator: wrong syntax for claim: empty string`,
 		},
 		// 27
 		{
 			fPath:  "testvectors/json/test-boot-seed-invalid-short.json",
-			eStr:   `validating psa-boot-seed: wrong syntax for claim: invalid length 4 (MUST be between 8 and 32 bytes)`,
+			eStr:   `validating boot seed: wrong syntax for claim: invalid length 4 (MUST be between 8 and 32 bytes)`,
 			p2Only: true,
 		},
 		// 28
 		{
 			fPath:  "testvectors/json/test-boot-seed-invalid-long.json",
-			eStr:   `validating psa-boot-seed: wrong syntax for claim: invalid length 34 (MUST be between 8 and 32 bytes)`,
+			eStr:   `validating boot seed: wrong syntax for claim: invalid length 34 (MUST be between 8 and 32 bytes)`,
 			p2Only: true,
 		},
 		// 29
 		{
 			fPath:  "testvectors/json/test-boot-seed-invalid-missing.json",
-			eStr:   `validating psa-boot-seed: missing mandatory claim`,
+			eStr:   `validating boot seed: missing mandatory claim`,
 			p1Only: true,
 		},
 	}
 
 	for i, tc := range tCases {
-		if profile != PsaProfile1 && tc.p1Only ||
-			profile != PsaProfile2 && tc.p2Only {
+		if profile != Profile1Name && tc.p1Only ||
+			profile != Profile2Name && tc.p2Only {
 			continue
 		}
 
@@ -396,8 +395,8 @@ func validatePositives(t *testing.T, profile string) {
 	}
 
 	for i, tc := range tCases {
-		if profile != PsaProfile1 && tc.p1Only ||
-			profile != PsaProfile2 && tc.p2Only {
+		if profile != Profile1Name && tc.p1Only ||
+			profile != Profile2Name && tc.p2Only {
 			continue
 		}
 
