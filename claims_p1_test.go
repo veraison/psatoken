@@ -58,7 +58,7 @@ func Test_NewP1Claims_ok(t *testing.T) {
 	c, err := newP1Claims(includeProfileClaim)
 	assert.NoError(t, err)
 
-	expected := PsaProfile1
+	expected := Profile1Name
 
 	actual, err := c.GetProfile()
 	assert.NoError(t, err)
@@ -79,31 +79,6 @@ func Test_P1Claims_Validate_all_claims(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func Test_P1Claims_Set_NonValid_Claims(t *testing.T) {
-	var c P1Claims
-
-	err := c.SetConfig([]byte("123"))
-	expectedErr := "invalid SetConfig invoked on p1 claims"
-	assert.EqualError(t, err, expectedErr)
-
-	err = c.SetHashAlgID("sha-256")
-	expectedErr = "invalid SetHashAlgID invoked on p1 claims"
-	assert.EqualError(t, err, expectedErr)
-
-}
-
-func Test_P1Claims_Get_NonValid_Claims(t *testing.T) {
-	var c P1Claims
-
-	_, err := c.GetConfig()
-	expectedErr := "invalid GetConfig invoked on p1 claims"
-	assert.EqualError(t, err, expectedErr)
-
-	_, err = c.GetHashAlgID()
-	expectedErr = "invalid GetHashAlgID invoked on p1 claims"
-	assert.EqualError(t, err, expectedErr)
-}
-
 func Test_P1Claims_Validate_mandatory_only_claims(t *testing.T) {
 	c := mustBuildValidP1Claims(t, false, false)
 
@@ -122,7 +97,7 @@ func Test_P1Claims_ToCBOR_invalid(t *testing.T) {
 	c, err := newP1Claims(false)
 	require.NoError(t, err)
 
-	expectedErr := `validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim`
+	expectedErr := `validation of PSA claims failed: validating security lifecycle: missing mandatory claim`
 
 	_, err = c.ToCBOR()
 
@@ -187,7 +162,7 @@ func Test_P1Claims_FromCBOR_bad_input(t *testing.T) {
 func Test_P1Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedP1ClaimsMissingMandatoryNonce)
 
-	expectedErr := "validation of PSA claims failed: validating psa-nonce: missing mandatory claim"
+	expectedErr := "validation of PSA claims failed: validating nonce: missing mandatory claim"
 
 	var c P1Claims
 	err := c.FromCBOR(buf)
@@ -203,7 +178,7 @@ func Test_P1Claims_FromCBOR_ok_mandatory_only(t *testing.T) {
 	assert.NoError(t, err)
 
 	// even if it's not physically present the profile indication is always returned
-	expectedProfile := PsaProfile1
+	expectedProfile := Profile1Name
 	actualProfile, err := c.GetProfile()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedProfile, actualProfile)
@@ -255,11 +230,11 @@ func Test_P1Claims_FromCBOR_ok_mandatory_only(t *testing.T) {
 }
 
 func Test_P1Claims_Validate_positives(t *testing.T) {
-	validatePositives(t, PsaProfile1)
+	validatePositives(t, Profile1Name)
 }
 
 func Test_P1Claims_Validate_negatives(t *testing.T) {
-	validateNegatives(t, PsaProfile1)
+	validateNegatives(t, Profile1Name)
 }
 
 func Test_P1Claims_FromJSON_positives(t *testing.T) {

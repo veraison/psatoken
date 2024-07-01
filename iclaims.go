@@ -3,41 +3,10 @@
 
 package psatoken
 
-import (
-	"errors"
-	"fmt"
-)
+import "fmt"
 
-// IClaims provides a uniform interface for dealing with claims in all supported
-// profiles
-type IClaims interface {
-	// Getters
-	GetProfile() (string, error)
-	GetClientID() (int32, error)
-	GetSecurityLifeCycle() (uint16, error)
-	GetImplID() ([]byte, error)
-	GetBootSeed() ([]byte, error)
-	GetCertificationReference() (string, error)
-	GetSoftwareComponents() ([]SwComponent, error)
-	GetNonce() ([]byte, error)
-	GetInstID() ([]byte, error)
-	GetVSI() (string, error)
-	GetConfig() ([]byte, error)
-	GetHashAlgID() (string, error)
-
-	// Setters
-	SetClientID(int32) error
-	SetSecurityLifeCycle(uint16) error
-	SetImplID([]byte) error
-	SetBootSeed([]byte) error
-	SetCertificationReference(string) error
-	SetSoftwareComponents([]SwComponent) error
-	SetNonce([]byte) error
-	SetInstID([]byte) error
-	SetVSI(string) error
-	SetConfig([]byte) error
-	SetHashAlgID(string) error
-
+// IClaimsBase defines an interface for working with all EAT-based claims
+type IClaimsBase interface {
 	// CBOR codecs
 	FromCBOR([]byte) error
 	ToCBOR() ([]byte, error)
@@ -54,6 +23,36 @@ type IClaims interface {
 	Validate() error
 }
 
+// IClaims defines a uniform interface for dealing with claims common to all
+// PSA profiles
+type IClaims interface {
+	IClaimsBase
+
+	GetProfile() (string, error)
+	GetClientID() (int32, error)
+	GetSecurityLifeCycle() (uint16, error)
+	GetImplID() ([]byte, error)
+	GetBootSeed() ([]byte, error)
+	GetCertificationReference() (string, error)
+	GetSoftwareComponents() ([]SwComponent, error)
+	GetNonce() ([]byte, error)
+	GetInstID() ([]byte, error)
+	GetVSI() (string, error)
+
+	SetClientID(int32) error
+	SetSecurityLifeCycle(uint16) error
+	SetImplID([]byte) error
+	SetBootSeed([]byte) error
+	SetCertificationReference(string) error
+	SetSoftwareComponents([]SwComponent) error
+	SetNonce([]byte) error
+	SetInstID([]byte) error
+	SetVSI(string) error
+}
+
+// NewClaims returns a new IClaims implementation instance associated with the
+// specified profile name. An error is returned if the specified name does not
+// correspond to any of the previously registered profiles.
 func NewClaims(profile string) (IClaims, error) {
 	entry, ok := profilesRegister[profile]
 	if !ok {
@@ -63,76 +62,50 @@ func NewClaims(profile string) (IClaims, error) {
 	return entry.Profile.GetClaims(), nil
 }
 
-func validate(c IClaims, profile string) error {
-	p, err := c.GetProfile()
-	if err != nil {
+// ValidateClaims returns an error if validation fails for any of the standard
+// PSA cliams defined by IClaims. This function may be used by new profiles
+// whos implementations do not embed existing IClaims implementations and so
+// cannot benefit from their existing Validate() methods.
+func ValidateClaims(c IClaims) error {
+	if err := FilterError(c.GetProfile()); err != nil {
 		return fmt.Errorf("validating profile: %w", err)
 	}
 
-	if p != profile {
-		return fmt.Errorf("%w: expecting %q, got %q", ErrWrongProfile, profile, p)
+	if err := FilterError(c.GetSecurityLifeCycle()); err != nil {
+		return fmt.Errorf("validating security lifecycle: %w", err)
 	}
 
-	// security lifecycle
-	if _, err := c.GetSecurityLifeCycle(); err != nil {
-		return fmt.Errorf("validating psa-security-lifecycle: %w", err)
+	if err := FilterError(c.GetImplID()); err != nil {
+		return fmt.Errorf("validating implementation id: %w", err)
 	}
 
-	// implementation id
-	if _, err := c.GetImplID(); err != nil {
-		return fmt.Errorf("validating psa-implementation-id: %w", err)
+	if err := FilterError(c.GetSoftwareComponents()); err != nil {
+		return fmt.Errorf("validating software components: %w", err)
 	}
 
-	// sw components
-	if _, err := c.GetSoftwareComponents(); err != nil {
-		return fmt.Errorf("validating psa-software-components: %w", err)
+	if err := FilterError(c.GetNonce()); err != nil {
+		return fmt.Errorf("validating nonce: %w", err)
 	}
 
-	// nonce
-	if _, err := c.GetNonce(); err != nil {
-		return fmt.Errorf("validating psa-nonce: %w", err)
+	if err := FilterError(c.GetInstID()); err != nil {
+		return fmt.Errorf("validating instance id: %w", err)
 	}
 
-	// instance id
-	if _, err := c.GetInstID(); err != nil {
-		return fmt.Errorf("validating psa-instance-id: %w", err)
+	if err := FilterError(c.GetVSI()); err != nil {
+		return fmt.Errorf("validating verification service indicator: %w", err)
 	}
 
-	// VSI is optional
-	if _, err := c.GetVSI(); err != nil && !errors.Is(err, ErrOptionalClaimMissing) {
-		return fmt.Errorf("validating psa-verification-service-indicator: %w", err)
+	if err := FilterError(c.GetClientID()); err != nil {
+		return fmt.Errorf("validating client id: %w", err)
 	}
 
-	switch profile {
-	case PsaProfile1, PsaProfile2:
-		// client id
-		if _, err := c.GetClientID(); err != nil {
-			return fmt.Errorf("validating psa-client-id: %w", err)
-		}
-
-		// boot seed is optional in P2
-		if _, err := c.GetBootSeed(); err != nil {
-			if profile != PsaProfile2 ||
-				(profile == PsaProfile2 && !errors.Is(err, ErrOptionalClaimMissing)) {
-				return fmt.Errorf("validating psa-boot-seed: %w", err)
-			}
-		}
-
-		// certification reference is optional
-		if _, err := c.GetCertificationReference(); err != nil && !errors.Is(err, ErrOptionalClaimMissing) {
-			return fmt.Errorf("validating psa-certification-reference: %w", err)
-		}
-
-	case CcaProfile:
-		// config is mandatory in CCA
-		if _, err := c.GetConfig(); err != nil {
-			return fmt.Errorf("validating cca-platform-config: %w", err)
-		}
-
-		// hash algo id is mandatory in CCA
-		if _, err := c.GetHashAlgID(); err != nil {
-			return fmt.Errorf("validating cca-platform-hash-algo-id: %w", err)
-		}
+	if err := FilterError(c.GetBootSeed()); err != nil {
+		return fmt.Errorf("validating boot seed: %w", err)
 	}
+
+	if err := FilterError(c.GetCertificationReference()); err != nil {
+		return fmt.Errorf("validating certification reference: %w", err)
+	}
+
 	return nil
 }

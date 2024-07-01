@@ -1,6 +1,7 @@
 // Copyright 2021-2024 Contributors to the Veraison project.
 // SPDX-License-Identifier: Apache-2.0
 // CCA platform Claims
+
 package psatoken
 
 import (
@@ -10,18 +11,46 @@ import (
 	"github.com/veraison/eat"
 )
 
+type ICCAClaims interface {
+	IClaims
+
+	GetConfig() ([]byte, error)
+	GetHashAlgID() (string, error)
+
+	SetConfig([]byte) error
+	SetHashAlgID(string) error
+}
+
+func ValidateCCAClaims(c ICCAClaims) error {
+	if err := ValidateClaims(c); err != nil {
+		return err
+	}
+
+	if err := FilterError(c.GetConfig()); err != nil {
+		return fmt.Errorf("validating platform config: %w", err)
+	}
+
+	if err := FilterError(c.GetHashAlgID()); err != nil {
+		return fmt.Errorf("validating platform hash algo id: %w", err)
+	}
+
+	return nil
+}
+
+const CCAProfileName = "http://arm.com/CCA-SSD/1.0.0"
+
 type CCAPlatformProfile struct{}
 
 func (o CCAPlatformProfile) GetName() string {
-	return "http://arm.com/CCA-SSD/1.0.0"
+	return CCAProfileName
 }
 
 func (o CCAPlatformProfile) GetClaims() IClaims {
-	claims, err := newCcaPlatformClaims()
+	claims, err := newCCAPlatformClaims()
 
 	if err != nil {
 		// We should never get here as the only source of error inside
-		// newCcaPlatformClaims() is when attempting to set the Profile field
+		// newCCAPlatformClaims() is when attempting to set the Profile field
 		// when it is already set; however, as we're creating a new
 		// claims struct, this cannot happen.
 		panic(err)
@@ -30,21 +59,123 @@ func (o CCAPlatformProfile) GetClaims() IClaims {
 	return claims
 }
 
-type CcaPlatformClaims struct {
-	Profile      *eat.Profile   `cbor:"265,keyasint" json:"cca-platform-profile"`
-	Challenge    *eat.Nonce     `cbor:"10,keyasint" json:"cca-platform-challenge"`
-	ImplID       *[]byte        `cbor:"2396,keyasint" json:"cca-platform-implementation-id"`
-	InstID       *eat.UEID      `cbor:"256,keyasint" json:"cca-platform-instance-id"`
-	Config       *[]byte        `cbor:"2401,keyasint" json:"cca-platform-config"`
-	LifeCycle    *uint16        `cbor:"2395,keyasint" json:"cca-platform-lifecycle"`
-	SwComponents *[]SwComponent `cbor:"2399,keyasint" json:"cca-platform-sw-components"`
+const (
+	CCAPlatformLifecycleUnknownMin                     = 0x0000
+	CCAPlatformLifecycleUnknownMax                     = 0x00ff
+	CCAPlatformLifecycleAssemblyAndTestMin             = 0x1000
+	CCAPlatformLifecycleAssemblyAndTestMax             = 0x10ff
+	CCAPlatformLifecycleRotProvisioningMin             = 0x2000
+	CCAPlatformLifecycleRotProvisioningMax             = 0x20ff
+	CCAPlatformLifecycleSecuredMin                     = 0x3000
+	CCAPlatformLifecycleSecuredMax                     = 0x30ff
+	CCAPlatformLifecycleNonCCAPlatformDebugMin         = 0x4000
+	CCAPlatformLifecycleNonCCAPlatformDebugMax         = 0x40ff
+	CCAPlatformLifecycleRecoverableCCAPlatformDebugMin = 0x5000
+	CCAPlatformLifecycleRecoverableCCAPlatformDebugMax = 0x50ff
+	CCAPlatformLifecycleDecommissionedMin              = 0x6000
+	CCAPlatformLifecycleDecommissionedMax              = 0x60ff
+)
+
+type CCALifeCycleState uint16
+
+const (
+	CCAStateUnknown CCALifeCycleState = iota
+	CCAStateAssemblyAndTest
+	CCAStateCCARotProvisioning
+	CCAStateSecured
+	CCAStateNonCCAPlatformDebug
+	CCAStateRecoverableCCAPlatformDebug
+	CCAStateDecommissioned
+
+	CCAStateInvalid // must be last
+)
+
+func (o CCALifeCycleState) IsValid() bool {
+	return o < CCAStateInvalid
+}
+
+func (o CCALifeCycleState) String() string {
+	switch o {
+	case CCAStateUnknown:
+		return "unknown"
+	case CCAStateAssemblyAndTest:
+		return "assembly-and-test"
+	case CCAStateCCARotProvisioning:
+		return "cca-platform-rot-provisioning"
+	case CCAStateSecured:
+		return "secured"
+	case CCAStateNonCCAPlatformDebug:
+		return "non-cca-platform-rot-debug"
+	case CCAStateRecoverableCCAPlatformDebug:
+		return "recoverable-cca-platform-rot-debug"
+	case CCAStateDecommissioned:
+		return "decommissioned"
+	default:
+		return "invalid"
+	}
+}
+
+func CCALifeCycleToState(v uint16) CCALifeCycleState {
+	if v >= CCAPlatformLifecycleUnknownMin &&
+		v <= CCAPlatformLifecycleUnknownMax {
+		return CCAStateUnknown
+	}
+
+	if v >= CCAPlatformLifecycleAssemblyAndTestMin &&
+		v <= CCAPlatformLifecycleAssemblyAndTestMax {
+		return CCAStateAssemblyAndTest
+	}
+
+	if v >= CCAPlatformLifecycleRotProvisioningMin &&
+		v <= CCAPlatformLifecycleRotProvisioningMax {
+		return CCAStateCCARotProvisioning
+	}
+
+	if v >= CCAPlatformLifecycleSecuredMin &&
+		v <= CCAPlatformLifecycleSecuredMax {
+		return CCAStateSecured
+	}
+
+	if v >= CCAPlatformLifecycleNonCCAPlatformDebugMin &&
+		v <= CCAPlatformLifecycleNonCCAPlatformDebugMax {
+		return CCAStateNonCCAPlatformDebug
+	}
+
+	if v >= CCAPlatformLifecycleRecoverableCCAPlatformDebugMin &&
+		v <= CCAPlatformLifecycleRecoverableCCAPlatformDebugMax {
+		return CCAStateRecoverableCCAPlatformDebug
+	}
+
+	if v >= CCAPlatformLifecycleDecommissionedMin &&
+		v <= CCAPlatformLifecycleDecommissionedMax {
+		return CCAStateDecommissioned
+	}
+	return CCAStateInvalid
+}
+
+func ValidateCCASecurityLifeCycle(v uint16) error {
+	if !CCALifeCycleToState(v).IsValid() {
+		return fmt.Errorf("%w: value %d is invalid", ErrWrongClaimSyntax, v)
+	}
+
+	return nil
+}
+
+type CCAPlatformClaims struct {
+	Profile           *eat.Profile   `cbor:"265,keyasint" json:"cca-platform-profile"`
+	Challenge         *eat.Nonce     `cbor:"10,keyasint" json:"cca-platform-challenge"`
+	ImplID            *[]byte        `cbor:"2396,keyasint" json:"cca-platform-implementation-id"`
+	InstID            *eat.UEID      `cbor:"256,keyasint" json:"cca-platform-instance-id"`
+	Config            *[]byte        `cbor:"2401,keyasint" json:"cca-platform-config"`
+	SecurityLifeCycle *uint16        `cbor:"2395,keyasint" json:"cca-platform-lifecycle"`
+	SwComponents      *[]SwComponent `cbor:"2399,keyasint" json:"cca-platform-sw-components"`
 
 	VSI       *string `cbor:"2400,keyasint,omitempty" json:"cca-platform-service-indicator,omitempty"`
 	HashAlgID *string `cbor:"2402,keyasint" json:"cca-platform-hash-algo-id"`
 }
 
-func newCcaPlatformClaims() (IClaims, error) {
-	var c CcaPlatformClaims
+func newCCAPlatformClaims() (ICCAClaims, error) {
+	var c CCAPlatformClaims
 
 	if err := c.setProfile(); err != nil {
 		return nil, err
@@ -53,14 +184,14 @@ func newCcaPlatformClaims() (IClaims, error) {
 	return &c, nil
 }
 
-func (c *CcaPlatformClaims) setProfile() error {
+func (c *CCAPlatformClaims) setProfile() error {
 	if c.Profile != nil {
 		panic("profile already set")
 	}
 
 	p := eat.Profile{}
 
-	if err := p.Set(CcaProfile); err != nil {
+	if err := p.Set(CCAProfileName); err != nil {
 		return err
 	}
 
@@ -70,13 +201,13 @@ func (c *CcaPlatformClaims) setProfile() error {
 }
 
 // Semantic validation
-func (c CcaPlatformClaims) Validate() error {
-	return validate(&c, CcaProfile)
+func (c CCAPlatformClaims) Validate() error {
+	return ValidateCCAClaims(&c)
 }
 
 // Codecs
 
-func (c *CcaPlatformClaims) FromCBOR(buf []byte) error {
+func (c *CCAPlatformClaims) FromCBOR(buf []byte) error {
 	err := c.FromUnvalidatedCBOR(buf)
 	if err != nil {
 		return err
@@ -90,7 +221,7 @@ func (c *CcaPlatformClaims) FromCBOR(buf []byte) error {
 	return nil
 }
 
-func (c *CcaPlatformClaims) FromUnvalidatedCBOR(buf []byte) error {
+func (c *CCAPlatformClaims) FromUnvalidatedCBOR(buf []byte) error {
 	err := dm.Unmarshal(buf, c)
 	if err != nil {
 		return fmt.Errorf("CBOR decoding of CCA platform claims failed: %w", err)
@@ -99,7 +230,7 @@ func (c *CcaPlatformClaims) FromUnvalidatedCBOR(buf []byte) error {
 	return nil
 }
 
-func (c CcaPlatformClaims) ToCBOR() ([]byte, error) {
+func (c CCAPlatformClaims) ToCBOR() ([]byte, error) {
 	err := c.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("validation of CCA platform claims failed: %w", err)
@@ -108,7 +239,7 @@ func (c CcaPlatformClaims) ToCBOR() ([]byte, error) {
 	return c.ToUnvalidatedCBOR()
 }
 
-func (c CcaPlatformClaims) ToUnvalidatedCBOR() ([]byte, error) {
+func (c CCAPlatformClaims) ToUnvalidatedCBOR() ([]byte, error) {
 	buf, err := em.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("CBOR encoding of CCA platform claims failed: %w", err)
@@ -117,7 +248,7 @@ func (c CcaPlatformClaims) ToUnvalidatedCBOR() ([]byte, error) {
 	return buf, nil
 }
 
-func (c *CcaPlatformClaims) FromJSON(buf []byte) error {
+func (c *CCAPlatformClaims) FromJSON(buf []byte) error {
 	err := c.FromUnvalidatedJSON(buf)
 	if err != nil {
 		return err
@@ -131,7 +262,7 @@ func (c *CcaPlatformClaims) FromJSON(buf []byte) error {
 	return nil
 }
 
-func (c *CcaPlatformClaims) FromUnvalidatedJSON(buf []byte) error {
+func (c *CCAPlatformClaims) FromUnvalidatedJSON(buf []byte) error {
 	err := json.Unmarshal(buf, c)
 	if err != nil {
 		return fmt.Errorf("JSON decoding of CCA platform claims failed: %w", err)
@@ -140,7 +271,7 @@ func (c *CcaPlatformClaims) FromUnvalidatedJSON(buf []byte) error {
 	return nil
 }
 
-func (c CcaPlatformClaims) ToJSON() ([]byte, error) {
+func (c CCAPlatformClaims) ToJSON() ([]byte, error) {
 	err := c.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("validation of CCA platform claims failed: %w", err)
@@ -149,7 +280,7 @@ func (c CcaPlatformClaims) ToJSON() ([]byte, error) {
 	return c.ToUnvalidatedJSON()
 }
 
-func (c CcaPlatformClaims) ToUnvalidatedJSON() ([]byte, error) {
+func (c CCAPlatformClaims) ToUnvalidatedJSON() ([]byte, error) {
 	buf, err := json.Marshal(&c)
 	if err != nil {
 		return nil, fmt.Errorf("JSON encoding of CCA platform claims failed: %w", err)
@@ -158,12 +289,18 @@ func (c CcaPlatformClaims) ToUnvalidatedJSON() ([]byte, error) {
 	return buf, nil
 }
 
-func (c *CcaPlatformClaims) SetImplID(v []byte) error {
-	return setImplID(&c.ImplID, &v)
+func (c *CCAPlatformClaims) SetImplID(v []byte) error {
+	if err := ValidateImplID(v); err != nil {
+		return err
+	}
+
+	c.ImplID = &v
+
+	return nil
 }
 
-func (c *CcaPlatformClaims) SetNonce(v []byte) error {
-	if err := isPSAHashType(v); err != nil {
+func (c *CCAPlatformClaims) SetNonce(v []byte) error {
+	if err := ValidatePSAHashType(v); err != nil {
 		return err
 	}
 
@@ -178,8 +315,8 @@ func (c *CcaPlatformClaims) SetNonce(v []byte) error {
 	return nil
 }
 
-func (c *CcaPlatformClaims) SetInstID(v []byte) error {
-	if err := isValidInstID(v); err != nil {
+func (c *CCAPlatformClaims) SetInstID(v []byte) error {
+	if err := ValidateInstID(v); err != nil {
 		return err
 	}
 
@@ -190,28 +327,40 @@ func (c *CcaPlatformClaims) SetInstID(v []byte) error {
 	return nil
 }
 
-func (c *CcaPlatformClaims) SetVSI(v string) error {
-	return setVSI(&c.VSI, &v)
+func (c *CCAPlatformClaims) SetVSI(v string) error {
+	if err := ValidateVSI(v); err != nil {
+		return err
+	}
+
+	c.VSI = &v
+
+	return nil
 }
 
-func (c *CcaPlatformClaims) SetSecurityLifeCycle(v uint16) error {
-	return setSecurityLifeCycle(&c.LifeCycle, &v, CcaProfile)
+func (c *CCAPlatformClaims) SetSecurityLifeCycle(v uint16) error {
+	if err := ValidateCCASecurityLifeCycle(v); err != nil {
+		return err
+	}
+
+	c.SecurityLifeCycle = &v
+
+	return nil
 }
 
-func (c *CcaPlatformClaims) SetBootSeed(v []byte) error {
-	return fmt.Errorf("invalid SetBootSeed invoked on CCA platform claims")
+func (c *CCAPlatformClaims) SetBootSeed(v []byte) error {
+	return fmt.Errorf("%w: boot seed", ErrClaimNotInProfile)
 }
 
-func (c *CcaPlatformClaims) SetCertificationReference(v string) error {
-	return fmt.Errorf("invalid SetCertificationReference invoked on CCA platform claims")
+func (c *CCAPlatformClaims) SetCertificationReference(v string) error {
+	return fmt.Errorf("%w: certification reference", ErrClaimNotInProfile)
 }
 
-func (c CcaPlatformClaims) SetClientID(int32) error {
-	return fmt.Errorf("invalid SetClientID invoked on CCA platform claims")
+func (c CCAPlatformClaims) SetClientID(int32) error {
+	return fmt.Errorf("%w: client id", ErrClaimNotInProfile)
 }
 
-func (c *CcaPlatformClaims) SetSoftwareComponents(scs []SwComponent) error {
-	if err := isValidSwComponents(scs); err != nil {
+func (c *CCAPlatformClaims) SetSoftwareComponents(scs []SwComponent) error {
+	if err := ValidateSwComponents(scs); err != nil {
 		return err
 	}
 
@@ -220,21 +369,23 @@ func (c *CcaPlatformClaims) SetSoftwareComponents(scs []SwComponent) error {
 	return nil
 }
 
-func (c *CcaPlatformClaims) SetConfig(v []byte) error {
-
+func (c *CCAPlatformClaims) SetConfig(v []byte) error {
 	if len(v) == 0 {
 		return ErrMandatoryClaimMissing
 	}
+
 	c.Config = &v
+
 	return nil
 }
 
-func (c *CcaPlatformClaims) SetHashAlgID(v string) error {
-
-	if err := isValidHashAlgID(v); err != nil {
+func (c *CCAPlatformClaims) SetHashAlgID(v string) error {
+	if err := ValidateHashAlgID(v); err != nil {
 		return err
 	}
+
 	c.HashAlgID = &v
+
 	return nil
 }
 
@@ -242,50 +393,75 @@ func (c *CcaPlatformClaims) SetHashAlgID(v string) error {
 // After successful call to Validate(), getters of mandatory claims are assured
 // to never fail.  Getters of optional claim may still fail with
 // ErrOptionalClaimMissing in case the claim is not present.
-
-func (c CcaPlatformClaims) GetProfile() (string, error) {
+func (c CCAPlatformClaims) GetProfile() (string, error) {
 	if c.Profile == nil {
 		return "", ErrMandatoryClaimMissing
+	}
+
+	profileString, err := c.Profile.Get()
+	if err != nil {
+		return "", err
+	}
+
+	if profileString != CCAProfileName {
+		return "", fmt.Errorf("%w: expecting %q, got %q",
+			ErrWrongProfile, CCAProfileName, profileString)
 	}
 
 	return c.Profile.Get()
 }
 
-func (c CcaPlatformClaims) GetClientID() (int32, error) {
-	return -1, fmt.Errorf("invalid GetClientID invoked on CCA platform claims")
+func (c CCAPlatformClaims) GetClientID() (int32, error) {
+	return -1, fmt.Errorf("%w: client id", ErrClaimNotInProfile)
 }
 
-func (c CcaPlatformClaims) GetSecurityLifeCycle() (uint16, error) {
-	return getSecurityLifeCycle(c.LifeCycle, CcaProfile)
+func (c CCAPlatformClaims) GetSecurityLifeCycle() (uint16, error) {
+	if c.SecurityLifeCycle == nil {
+		return 0, ErrMandatoryClaimMissing
+	}
+
+	if err := ValidateSecurityLifeCycle(*c.SecurityLifeCycle); err != nil {
+		return 0, err
+	}
+
+	return *c.SecurityLifeCycle, nil
 }
 
-func (c CcaPlatformClaims) GetImplID() ([]byte, error) {
-	return getImplID(c.ImplID)
+func (c CCAPlatformClaims) GetImplID() ([]byte, error) {
+	if c.ImplID == nil {
+		return nil, ErrMandatoryClaimMissing
+	}
+
+	if err := ValidateImplID(*c.ImplID); err != nil {
+		return nil, err
+	}
+
+	return *c.ImplID, nil
 }
 
-func (c CcaPlatformClaims) GetBootSeed() ([]byte, error) {
-	return nil, fmt.Errorf("invalid GetBootSeed invoked on CCA platform claims")
+func (c CCAPlatformClaims) GetBootSeed() ([]byte, error) {
+	return nil, fmt.Errorf("%w: boot seed", ErrClaimNotInProfile)
 }
 
-func (c CcaPlatformClaims) GetCertificationReference() (string, error) {
-	return "", fmt.Errorf("invalid GetCertificationReference invoked on CCA platform claims")
+func (c CCAPlatformClaims) GetCertificationReference() (string, error) {
+	return "", fmt.Errorf("%w: certification reference", ErrClaimNotInProfile)
 }
 
-func (c CcaPlatformClaims) GetSoftwareComponents() ([]SwComponent, error) {
+func (c CCAPlatformClaims) GetSoftwareComponents() ([]SwComponent, error) {
 	v := c.SwComponents
 
 	if v == nil {
 		return nil, ErrMandatoryClaimMissing
 	}
 
-	if err := isValidSwComponents(*v); err != nil {
+	if err := ValidateSwComponents(*v); err != nil {
 		return nil, err
 	}
 
 	return *v, nil
 }
 
-func (c CcaPlatformClaims) GetNonce() ([]byte, error) {
+func (c CCAPlatformClaims) GetNonce() ([]byte, error) {
 	v := c.Challenge
 
 	if v == nil {
@@ -299,32 +475,40 @@ func (c CcaPlatformClaims) GetNonce() ([]byte, error) {
 	}
 
 	n := v.GetI(0)
-	if err := isValidNonce(n); err != nil {
+	if err := ValidateNonce(n); err != nil {
 		return nil, err
 	}
 
 	return n, nil
 }
 
-func (c CcaPlatformClaims) GetInstID() ([]byte, error) {
+func (c CCAPlatformClaims) GetInstID() ([]byte, error) {
 	v := c.InstID
 
 	if v == nil {
 		return nil, ErrMandatoryClaimMissing
 	}
 
-	if err := isValidInstID(*v); err != nil {
+	if err := ValidateInstID(*v); err != nil {
 		return nil, err
 	}
 
 	return *v, nil
 }
 
-func (c CcaPlatformClaims) GetVSI() (string, error) {
-	return getVSI(c.VSI)
+func (c CCAPlatformClaims) GetVSI() (string, error) {
+	if c.VSI == nil {
+		return "", ErrOptionalClaimMissing
+	}
+
+	if err := ValidateVSI(*c.VSI); err != nil {
+		return "", err
+	}
+
+	return *c.VSI, nil
 }
 
-func (c CcaPlatformClaims) GetConfig() ([]byte, error) {
+func (c CCAPlatformClaims) GetConfig() ([]byte, error) {
 	v := c.Config
 	if v == nil {
 		return nil, ErrMandatoryClaimMissing
@@ -332,13 +516,13 @@ func (c CcaPlatformClaims) GetConfig() ([]byte, error) {
 	return *v, nil
 }
 
-func (c CcaPlatformClaims) GetHashAlgID() (string, error) {
+func (c CCAPlatformClaims) GetHashAlgID() (string, error) {
 	v := c.HashAlgID
 
 	if v == nil {
 		return "", ErrMandatoryClaimMissing
 	}
-	if err := isValidHashAlgID(*v); err != nil {
+	if err := ValidateHashAlgID(*v); err != nil {
 		return "", err
 	}
 	return *v, nil

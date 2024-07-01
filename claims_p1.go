@@ -9,13 +9,15 @@ import (
 	"fmt"
 )
 
-type PSAProfile1 struct{}
+const Profile1Name = "PSA_IOT_PROFILE_1"
 
-func (o PSAProfile1) GetName() string {
-	return "PSA_IOT_PROFILE_1"
+type Profile1 struct{}
+
+func (o Profile1) GetName() string {
+	return Profile1Name
 }
 
-func (o PSAProfile1) GetClaims() IClaims {
+func (o Profile1) GetClaims() IClaims {
 	claims, err := newP1Claims(true)
 
 	if err != nil {
@@ -45,52 +47,69 @@ type P1Claims struct {
 }
 
 func newP1Claims(includeProfile bool) (IClaims, error) {
-	var c P1Claims
-
 	if includeProfile {
-		if err := c.setProfile(); err != nil {
-			return nil, err
-		}
+		profile := Profile1Name
+		return &P1Claims{Profile: &profile}, nil
 	}
 
-	return &c, nil
+	return &P1Claims{}, nil
 }
 
-// Semantic validation
 func (c P1Claims) Validate() error { //nolint:gocritic
-	return validate(&c, PsaProfile1)
+	return ValidateClaims(&c)
 }
 
-func (c *P1Claims) setProfile() error {
-	if c.Profile != nil {
-		panic("profile already set")
+func (c *P1Claims) SetClientID(v int32) error {
+	c.ClientID = &v
+	return nil
+}
+
+func (c *P1Claims) SetSecurityLifeCycle(v uint16) error {
+	if err := ValidateSecurityLifeCycle(v); err != nil {
+		return err
 	}
 
-	p := PsaProfile1
-
-	c.Profile = &p
+	c.SecurityLifeCycle = &v
 
 	return nil
 }
 
-func (c *P1Claims) SetClientID(v int32) error {
-	return setClientID(&c.ClientID, &v)
-}
-
-func (c *P1Claims) SetSecurityLifeCycle(v uint16) error {
-	return setSecurityLifeCycle(&c.SecurityLifeCycle, &v, PsaProfile1)
-}
-
 func (c *P1Claims) SetImplID(v []byte) error {
-	return setImplID(&c.ImplID, &v)
+	if err := ValidateImplID(v); err != nil {
+		return err
+	}
+
+	c.ImplID = &v
+
+	return nil
 }
 
 func (c *P1Claims) SetBootSeed(v []byte) error {
-	return setBootSeed(&c.BootSeed, &v, PsaProfile1)
+	l := len(v)
+	if l != 32 {
+		return fmt.Errorf(
+			"%w: invalid length %d (MUST be 32 bytes)",
+			ErrWrongClaimSyntax, l,
+		)
+	}
+
+	c.BootSeed = &v
+
+	return nil
 }
 
 func (c *P1Claims) SetCertificationReference(v string) error {
-	return setCertificationReference(&c.CertificationReference, &v, PsaProfile1)
+	if !CertificationReferenceP1RE.MatchString(v) &&
+		!CertificationReferenceP2RE.MatchString(v) {
+		return fmt.Errorf(
+			"%w: MUST be in EAN-13 or EAN-13+5 format",
+			ErrWrongClaimSyntax,
+		)
+	}
+
+	c.CertificationReference = &v
+
+	return nil
 }
 
 // pass scs==nil to set the no-sw-measurements flag
@@ -102,7 +121,7 @@ func (c *P1Claims) SetSoftwareComponents(scs []SwComponent) error {
 		return nil
 	}
 
-	if err := isValidSwComponents(scs); err != nil {
+	if err := ValidateSwComponents(scs); err != nil {
 		return err
 	}
 
@@ -113,7 +132,7 @@ func (c *P1Claims) SetSoftwareComponents(scs []SwComponent) error {
 }
 
 func (c *P1Claims) SetNonce(v []byte) error {
-	if err := isPSAHashType(v); err != nil {
+	if err := ValidatePSAHashType(v); err != nil {
 		return err
 	}
 
@@ -123,7 +142,7 @@ func (c *P1Claims) SetNonce(v []byte) error {
 }
 
 func (c *P1Claims) SetInstID(v []byte) error {
-	if err := isValidInstID(v); err != nil {
+	if err := ValidateInstID(v); err != nil {
 		return err
 	}
 
@@ -133,15 +152,13 @@ func (c *P1Claims) SetInstID(v []byte) error {
 }
 
 func (c *P1Claims) SetVSI(v string) error {
-	return setVSI(&c.VSI, &v)
-}
+	if err := ValidateVSI(v); err != nil {
+		return err
+	}
 
-func (c *P1Claims) SetConfig(v []byte) error {
-	return fmt.Errorf("invalid SetConfig invoked on p1 claims")
-}
+	c.VSI = &v
 
-func (c *P1Claims) SetHashAlgID(v string) error {
-	return fmt.Errorf("invalid SetHashAlgID invoked on p1 claims")
+	return nil
 }
 
 // Codecs
@@ -235,47 +252,94 @@ func (c P1Claims) ToUnvalidatedJSON() ([]byte, error) { //nolint:gocritic
 
 func (c P1Claims) GetProfile() (string, error) { //nolint:gocritic
 	if c.Profile == nil {
-		return PsaProfile1, nil
+		return Profile1Name, nil
 	}
 
-	return *c.Profile, nil
+	p := *c.Profile
+
+	if p != Profile1Name {
+		return "", fmt.Errorf("%w: expecting %q, got %q", ErrWrongProfile, Profile1Name, p)
+	}
+
+	return p, nil
 }
 
 func (c P1Claims) GetClientID() (int32, error) { //nolint:gocritic
-	return getClientID(c.ClientID)
+	if c.ClientID == nil {
+		return 0, ErrMandatoryClaimMissing
+	}
+
+	return *c.ClientID, nil
 }
 
 func (c P1Claims) GetSecurityLifeCycle() (uint16, error) { //nolint:gocritic
-	return getSecurityLifeCycle(c.SecurityLifeCycle, PsaProfile1)
+	if c.SecurityLifeCycle == nil {
+		return 0, ErrMandatoryClaimMissing
+	}
+
+	if err := ValidateSecurityLifeCycle(*c.SecurityLifeCycle); err != nil {
+		return 0, err
+	}
+
+	return *c.SecurityLifeCycle, nil
 }
 
 func (c P1Claims) GetImplID() ([]byte, error) { //nolint:gocritic
-	return getImplID(c.ImplID)
+	if c.ImplID == nil {
+		return nil, ErrMandatoryClaimMissing
+	}
+
+	if err := ValidateImplID(*c.ImplID); err != nil {
+		return nil, err
+	}
+
+	return *c.ImplID, nil
 }
 
 func (c P1Claims) GetBootSeed() ([]byte, error) { //nolint:gocritic
-	return getBootSeed(c.BootSeed, PsaProfile1)
+	if c.BootSeed == nil {
+		return nil, ErrMandatoryClaimMissing
+	}
+
+	l := len(*c.BootSeed)
+	if l != 32 {
+		return nil, fmt.Errorf(
+			"%w: invalid length %d (MUST be 32 bytes)",
+			ErrWrongClaimSyntax, l,
+		)
+	}
+
+	return *c.BootSeed, nil
 }
 
 func (c P1Claims) GetCertificationReference() (string, error) { //nolint:gocritic
-	return getCertificationReference(c.CertificationReference, PsaProfile1)
+	if c.CertificationReference == nil {
+		return "", ErrOptionalClaimMissing
+	}
+
+	if !CertificationReferenceP1RE.MatchString(*c.CertificationReference) &&
+		!CertificationReferenceP2RE.MatchString(*c.CertificationReference) {
+		return "", fmt.Errorf(
+			"%w: MUST be in EAN-13 or EAN-13+5 format",
+			ErrWrongClaimSyntax,
+		)
+	}
+
+	return *c.CertificationReference, nil
 }
 
 // Caveat: this may return nil on success if psa-no-sw-measurement is asserted
 func (c P1Claims) GetSoftwareComponents() ([]SwComponent, error) { //nolint:gocritic
-	v := c.SwComponents
-	f := c.NoSwMeasurements
-
-	if v == nil {
+	if c.SwComponents == nil {
 		// psa-no-sw-measurement must be asserted
-		if f == nil {
+		if c.NoSwMeasurements == nil {
 			return nil, ErrMandatoryClaimMissing
 		}
 		return nil, nil
 	}
 
 	// psa-no-sw-measurement must not be asserted at the same time as psa-software-components
-	if f != nil {
+	if c.NoSwMeasurements != nil {
 		return nil,
 			fmt.Errorf(
 				"%w: psa-no-sw-measurement and psa-software-components cannot be present at the same time",
@@ -283,61 +347,55 @@ func (c P1Claims) GetSoftwareComponents() ([]SwComponent, error) { //nolint:gocr
 			)
 	}
 
-	if err := isValidSwComponents(*v); err != nil {
+	if err := ValidateSwComponents(*c.SwComponents); err != nil {
 		return nil, err
 	}
 
-	return *v, nil
+	return *c.SwComponents, nil
 }
 
 func (c P1Claims) GetNonce() ([]byte, error) { //nolint:gocritic
-	v := c.Nonce
-
-	if v == nil {
+	if c.Nonce == nil {
 		return nil, ErrMandatoryClaimMissing
 	}
 
-	if err := isValidNonce(*v); err != nil {
+	if err := ValidateNonce(*c.Nonce); err != nil {
 		return nil, err
 	}
 
-	return *v, nil
+	return *c.Nonce, nil
 }
 
 func (c P1Claims) GetInstID() ([]byte, error) { //nolint:gocritic
-	v := c.InstID
-
-	if v == nil {
+	if c.InstID == nil {
 		return nil, ErrMandatoryClaimMissing
 	}
 
-	if err := isValidInstID(*v); err != nil {
+	if err := ValidateInstID(*c.InstID); err != nil {
 		return nil, err
 	}
 
-	return *v, nil
+	return *c.InstID, nil
 }
 
 func (c P1Claims) GetVSI() (string, error) { //nolint:gocritic
-	return getVSI(c.VSI)
-}
+	if c.VSI == nil {
+		return "", ErrOptionalClaimMissing
+	}
 
-func (c P1Claims) GetConfig() ([]byte, error) { //nolint:gocritic
+	if err := ValidateVSI(*c.VSI); err != nil {
+		return "", err
+	}
 
-	return nil, fmt.Errorf("invalid GetConfig invoked on p1 claims")
-}
-
-func (c P1Claims) GetHashAlgID() (string, error) { //nolint:gocritic
-
-	return "", fmt.Errorf("invalid GetHashAlgID invoked on p1 claims")
+	return *c.VSI, nil
 }
 
 func init() {
-	if err := registerDefaultProfile(PSAProfile1{}); err != nil {
+	if err := registerDefaultProfile(Profile1{}); err != nil {
 		panic(err)
 	}
 
-	if err := RegisterProfile(PSAProfile1{}); err != nil {
+	if err := RegisterProfile(Profile1{}); err != nil {
 		panic(err)
 	}
 }

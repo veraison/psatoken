@@ -51,7 +51,7 @@ func Test_NewP2Claims_ok(t *testing.T) {
 	c, err := newP2Claims()
 	assert.NoError(t, err)
 
-	expected := PsaProfile2
+	expected := Profile2Name
 
 	actual, err := c.GetProfile()
 	assert.NoError(t, err)
@@ -72,35 +72,11 @@ func Test_P2Claims_Validate_mandatory_only_claims(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func Test_P2Claims_Set_NonValid_Claims(t *testing.T) {
-	var c P2Claims
-
-	err := c.SetConfig([]byte("123"))
-	expectedErr := "invalid SetConfig invoked on p2 claims"
-	assert.EqualError(t, err, expectedErr)
-
-	err = c.SetHashAlgID("sha-256")
-	expectedErr = "invalid SetHashAlgID invoked on p2 claims"
-	assert.EqualError(t, err, expectedErr)
-}
-
-func Test_P2Claims_Get_NonValid_Claims(t *testing.T) {
-	var c P2Claims
-
-	_, err := c.GetConfig()
-	expectedErr := "invalid GetConfig invoked on p2 claims"
-	assert.EqualError(t, err, expectedErr)
-
-	_, err = c.GetHashAlgID()
-	expectedErr = "invalid GetHashAlgID invoked on p2 claims"
-	assert.EqualError(t, err, expectedErr)
-}
-
 func Test_P2Claims_ToCBOR_invalid(t *testing.T) {
 	c, err := newP2Claims()
 	require.NoError(t, err)
 
-	expectedErr := `validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim`
+	expectedErr := `validation of PSA claims failed: validating security lifecycle: missing mandatory claim`
 
 	_, err = c.ToCBOR()
 
@@ -143,7 +119,7 @@ func Test_P2Claims_FromCBOR_bad_input(t *testing.T) {
 func Test_P2Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedP2ClaimsMissingMandatoryNonce)
 
-	expectedErr := "validation of PSA claims failed: validating psa-nonce: missing mandatory claim"
+	expectedErr := "validation of PSA claims failed: validating nonce: missing mandatory claim"
 
 	var c P2Claims
 	err := c.FromCBOR(buf)
@@ -154,7 +130,7 @@ func Test_P2Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 func Test_P2Claims_FromCBOR_invalid_multi_nonce(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedP2ClaimsInvalidMultiNonce)
 
-	expectedErr := "validation of PSA claims failed: validating psa-nonce: wrong syntax for claim: got 2 nonces, want 1"
+	expectedErr := "validation of PSA claims failed: validating nonce: wrong syntax for claim: got 2 nonces, want 1"
 
 	var c P2Claims
 	err := c.FromCBOR(buf)
@@ -171,7 +147,7 @@ func Test_P2Claims_FromCBOR_ok_mandatory_only(t *testing.T) {
 
 	// mandatory
 
-	expectedProfile := PsaProfile2
+	expectedProfile := Profile2Name
 	actualProfile, err := c.GetProfile()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedProfile, actualProfile)
@@ -223,11 +199,11 @@ func Test_P2Claims_FromCBOR_ok_mandatory_only(t *testing.T) {
 }
 
 func Test_P2Claims_Validate_positives(t *testing.T) {
-	validatePositives(t, PsaProfile2)
+	validatePositives(t, Profile2Name)
 }
 
 func Test_P2Claims_Validate_negatives(t *testing.T) {
-	validateNegatives(t, PsaProfile2)
+	validateNegatives(t, Profile2Name)
 }
 
 func Test_P2Claims_SetSecurityLifecycle_invalid(t *testing.T) {

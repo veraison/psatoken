@@ -28,7 +28,7 @@ func Test_DecodeClaims_p1_ok(t *testing.T) {
 
 		actualProfile, err := c.GetProfile()
 		assert.NoError(t, err)
-		assert.Equal(t, PsaProfile1, actualProfile)
+		assert.Equal(t, Profile1Name, actualProfile)
 	}
 }
 
@@ -41,7 +41,7 @@ func Test_DecodeClaims_p1_failure(t *testing.T) {
 		buf := mustHexDecode(t, tv)
 		_, err := DecodeClaimsFromCBOR(buf)
 
-		expectedError := `validating psa-nonce: missing mandatory claim`
+		expectedError := `validating nonce: missing mandatory claim`
 
 		assert.EqualError(t, err, expectedError)
 	}
@@ -62,7 +62,7 @@ func Test_DecodeClaims_p2_ok(t *testing.T) {
 
 		actualProfile, err := c.GetProfile()
 		assert.NoError(t, err)
-		assert.Equal(t, PsaProfile2, actualProfile)
+		assert.Equal(t, Profile2Name, actualProfile)
 	}
 }
 
@@ -75,40 +75,7 @@ func Test_DecodeClaims_p2_failure(t *testing.T) {
 		buf := mustHexDecode(t, tv)
 		_, err := DecodeClaimsFromCBOR(buf)
 
-		expectedError := `validating psa-nonce: missing mandatory claim`
-
-		assert.EqualError(t, err, expectedError)
-	}
-}
-
-func Test_DecodeClaims_CcaPlatform_ok(t *testing.T) {
-	tvs := []string{
-		testEncodedCcaPlatformClaimsAll,
-		testEncodedCcaPlatformClaimsMandatoryOnly,
-	}
-
-	for _, tv := range tvs {
-		buf := mustHexDecode(t, tv)
-		c, err := DecodeClaimsFromCBOR(buf)
-
-		assert.NoError(t, err)
-
-		actualProfile, err := c.GetProfile()
-		assert.NoError(t, err)
-		assert.Equal(t, CcaProfile, actualProfile)
-	}
-}
-
-func Test_DecodeClaims_CcaPlatform_failure(t *testing.T) {
-	tvs := []string{
-		testEncodedCcaPlatformClaimsMissingMandatoryNonce,
-	}
-
-	for _, tv := range tvs {
-		buf := mustHexDecode(t, tv)
-		_, err := DecodeClaimsFromCBOR(buf)
-
-		expectedError := `validating psa-nonce: missing mandatory claim`
+		expectedError := `validating nonce: missing mandatory claim`
 
 		assert.EqualError(t, err, expectedError)
 	}
@@ -123,7 +90,6 @@ func Test_DecodeUnvalidatedClaims(t *testing.T) {
 	tvs := []TestVector{
 		{testEncodedP1ClaimsMissingMandatoryNonce, &P1Claims{}},
 		{testEncodedP2ClaimsMissingMandatoryNonce, &P2Claims{}},
-		{testEncodedCcaPlatformClaimsMissingMandatoryNonce, &CcaPlatformClaims{}},
 	}
 
 	for _, tv := range tvs {
@@ -136,30 +102,21 @@ func Test_DecodeUnvalidatedClaims(t *testing.T) {
 }
 
 func Test_NewClaims_p1_ok(t *testing.T) {
-	c, err := NewClaims(PsaProfile1)
+	c, err := NewClaims(Profile1Name)
 	assert.NoError(t, err)
 
 	p, err := c.GetProfile()
 	assert.NoError(t, err)
-	assert.Equal(t, PsaProfile1, p)
+	assert.Equal(t, Profile1Name, p)
 }
 
 func Test_NewClaims_p2_ok(t *testing.T) {
-	c, err := NewClaims(PsaProfile2)
+	c, err := NewClaims(Profile2Name)
 	assert.NoError(t, err)
 
 	p, err := c.GetProfile()
 	assert.NoError(t, err)
-	assert.Equal(t, PsaProfile2, p)
-}
-
-func Test_NewClaims_CcaPlatform_ok(t *testing.T) {
-	c, err := NewClaims(CcaProfile)
-	assert.NoError(t, err)
-
-	p, err := c.GetProfile()
-	assert.NoError(t, err)
-	assert.Equal(t, CcaProfile, p)
+	assert.Equal(t, Profile2Name, p)
 }
 
 func Test_NewClaims_profile_unknown(t *testing.T) {
@@ -215,7 +172,7 @@ func Test_IClaims_SetInstID_invalid(t *testing.T) {
 func Test_IClaims_SetNonce_invalid(t *testing.T) {
 	tv := makeIClaims(t)
 
-	expectedErr := `wrong syntax for claim: length 0 (psa-hash-type MUST be 32, 48 or 64 bytes)`
+	expectedErr := `wrong syntax for claim: length 0 (hash MUST be 32, 48 or 64 bytes)`
 
 	for _, c := range tv {
 		err := c.SetNonce([]byte{})
@@ -279,11 +236,11 @@ func Test_IClaims_SetSoftwareComponents_invalid(t *testing.T) {
 }
 
 func Test_ToJSON_invalid(t *testing.T) {
-	for _, p := range []string{PsaProfile1, PsaProfile2} {
+	for _, p := range []string{Profile1Name, Profile2Name} {
 		c, err := NewClaims(p)
 		require.NoError(t, err)
 
-		expectedErr := `validation of PSA claims failed: validating psa-security-lifecycle: missing mandatory claim`
+		expectedErr := `validation of PSA claims failed: validating security lifecycle: missing mandatory claim`
 
 		_, err = c.ToJSON()
 		assert.EqualError(t, err, expectedErr)
@@ -298,7 +255,7 @@ func Test_DecodeJSONClaims_P2(t *testing.T) {
 	assert.NoError(t, err)
 	actualProfile, err := c.GetProfile()
 	assert.NoError(t, err)
-	assert.Equal(t, PsaProfile2, actualProfile)
+	assert.Equal(t, Profile2Name, actualProfile)
 }
 
 func Test_DecodeJSONClaims_P1(t *testing.T) {
@@ -309,18 +266,7 @@ func Test_DecodeJSONClaims_P1(t *testing.T) {
 	assert.NoError(t, err)
 	actualProfile, err := c.GetProfile()
 	assert.NoError(t, err)
-	assert.Equal(t, PsaProfile1, actualProfile)
-}
-
-func Test_DecodeJSONClaims_CcaPlatform(t *testing.T) {
-	buf, err := os.ReadFile("testvectors/json/ccatoken/test-token-valid-full.json")
-	require.NoError(t, err)
-
-	c, err := DecodeClaimsFromJSON(buf)
-	assert.NoError(t, err)
-	actualProfile, err := c.GetProfile()
-	assert.NoError(t, err)
-	assert.Equal(t, CcaProfile, actualProfile)
+	assert.Equal(t, Profile1Name, actualProfile)
 }
 
 func Test_DecodeUnvalidatedJSONClaims(t *testing.T) {
@@ -332,7 +278,6 @@ func Test_DecodeUnvalidatedJSONClaims(t *testing.T) {
 		// valid
 		{"testvectors/json/test-token-valid-minimalist-p1.json", &P1Claims{}},
 		{"testvectors/json/test-token-valid-minimalist-p2.json", &P2Claims{}},
-		{"testvectors/json/ccatoken/test-token-valid-full.json", &CcaPlatformClaims{}},
 
 		// invalid
 		{"testvectors/json/test-boot-seed-invalid-long.json", &P2Claims{}},
@@ -340,9 +285,6 @@ func Test_DecodeUnvalidatedJSONClaims(t *testing.T) {
 		{"testvectors/json/test-hardware-version-invalid.json", &P2Claims{}},
 		{"testvectors/json/test-sw-components-invalid-missing.json", &P2Claims{}},
 		{"testvectors/json/test-security-lifecycle-invalid-state.json", &P2Claims{}},
-		{"testvectors/json/ccatoken/test-no-sw-components.json", &CcaPlatformClaims{}},
-		{"testvectors/json/ccatoken/test-invalid-profile.json", &CcaPlatformClaims{}},
-		{"testvectors/json/ccatoken/test-invalid-psa-claims.json", &CcaPlatformClaims{}},
 	}
 
 	for _, tv := range tvs {
