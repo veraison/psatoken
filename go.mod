@@ -1,6 +1,6 @@
 module github.com/veraison/psatoken
 
-go 1.15
+go 1.21
 
 require (
 	github.com/fxamacker/cbor/v2 v2.4.0

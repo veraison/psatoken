@@ -3,11 +3,6 @@
 
 package psatoken
 
-import (
-	"errors"
-	"fmt"
-)
-
 // SwComponent is the internal representation of a Software Component
 type SwComponent struct {
 	MeasurementType  *string `cbor:"1,keyasint,omitempty" json:"measurement-type,omitempty"`
@@ -18,28 +13,16 @@ type SwComponent struct {
 }
 
 func (sc SwComponent) Validate() error {
-	if sc.MeasurementValue == nil {
-		return errors.New("missing mandatory measurement-value")
-	}
-
-	if err := ValidatePSAHashType(*sc.MeasurementValue); err != nil {
-		return fmt.Errorf("invalid measurement-value: %w", err)
-	}
-
-	if sc.SignerID == nil {
-		return errors.New("missing mandatory signer-id")
-	}
-
-	if err := ValidatePSAHashType(*sc.SignerID); err != nil {
-		return fmt.Errorf("invalid signer-id: %w", err)
-	}
-
-	return nil
+	return ValidateSwComponent(&sc)
 }
 
 func (sc SwComponent) GetMeasurementValue() ([]byte, error) {
 	if sc.MeasurementValue == nil {
-		return nil, ErrMandatoryClaimMissing
+		return nil, ErrMandatoryFieldMissing
+	}
+
+	if err := ValidatePSAHashType(*sc.MeasurementValue); err != nil {
+		return nil, err
 	}
 
 	return *sc.MeasurementValue, nil
@@ -47,7 +30,11 @@ func (sc SwComponent) GetMeasurementValue() ([]byte, error) {
 
 func (sc SwComponent) GetSignerID() ([]byte, error) {
 	if sc.SignerID == nil {
-		return nil, ErrMandatoryClaimMissing
+		return nil, ErrMandatoryFieldMissing
+	}
+
+	if err := ValidatePSAHashType(*sc.SignerID); err != nil {
+		return nil, err
 	}
 
 	return *sc.SignerID, nil
@@ -55,7 +42,7 @@ func (sc SwComponent) GetSignerID() ([]byte, error) {
 
 func (sc SwComponent) GetMeasurementType() (string, error) {
 	if sc.MeasurementType == nil {
-		return "", ErrOptionalClaimMissing
+		return "", ErrOptionalFieldMissing
 	}
 
 	return *sc.MeasurementType, nil
@@ -63,7 +50,7 @@ func (sc SwComponent) GetMeasurementType() (string, error) {
 
 func (sc SwComponent) GetMeasurementDesc() (string, error) {
 	if sc.MeasurementDesc == nil {
-		return "", ErrOptionalClaimMissing
+		return "", ErrOptionalFieldMissing
 	}
 
 	return *sc.MeasurementDesc, nil
@@ -71,8 +58,43 @@ func (sc SwComponent) GetMeasurementDesc() (string, error) {
 
 func (sc SwComponent) GetVersion() (string, error) {
 	if sc.Version == nil {
-		return "", ErrOptionalClaimMissing
+		return "", ErrOptionalFieldMissing
 	}
 
 	return *sc.Version, nil
+}
+
+func (sc *SwComponent) SetMeasurementType(v string) error {
+	sc.MeasurementType = &v
+	return nil
+}
+
+func (sc *SwComponent) SetMeasurementValue(v []byte) error {
+	if err := ValidatePSAHashType(v); err != nil {
+		return err
+	}
+
+	sc.MeasurementValue = &v
+
+	return nil
+}
+
+func (sc *SwComponent) SetVersion(v string) error {
+	sc.Version = &v
+	return nil
+}
+
+func (sc *SwComponent) SetSignerID(v []byte) error {
+	if err := ValidatePSAHashType(v); err != nil {
+		return err
+	}
+
+	sc.SignerID = &v
+
+	return nil
+}
+
+func (sc *SwComponent) SetMeasurementDesc(v string) error {
+	sc.MeasurementDesc = &v
+	return nil
 }

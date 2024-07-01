@@ -231,12 +231,11 @@ func TestEvidence_SetClaims_unknown_profile(t *testing.T) {
 }
 
 func TestEvidence_SetClaims_validation_failed(t *testing.T) {
-	tv, err := newP2Claims()
-	require.NoError(t, err)
+	tv := newP2Claims()
 
 	evidence := Evidence{}
 
-	err = evidence.SetClaims(tv)
+	err := evidence.SetClaims(tv)
 
 	assert.EqualError(t, err, "validation failed: validating security lifecycle: missing mandatory claim")
 }

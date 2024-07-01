@@ -18,41 +18,40 @@ func (o Profile1) GetName() string {
 }
 
 func (o Profile1) GetClaims() IClaims {
-	claims, err := newP1Claims(true)
-
-	if err != nil {
-		// We should never get here as the only source of error inside
-		// newP1Claims() is when attempting to set the Profile field
-		// when it is already set; however, as we're crleating a new
-		// claims struct, this cannot happen.
-		panic(err)
-	}
-
-	return claims
+	return newP1Claims(true)
 }
 
 // P1Claims are associated with profile "PSA_IOT_PROFILE_1"
 type P1Claims struct {
-	Profile                *string        `cbor:"-75000,keyasint,omitempty" json:"psa-profile"`
-	ClientID               *int32         `cbor:"-75001,keyasint" json:"psa-client-id"`
-	SecurityLifeCycle      *uint16        `cbor:"-75002,keyasint" json:"psa-security-lifecycle"`
-	ImplID                 *[]byte        `cbor:"-75003,keyasint" json:"psa-implementation-id"`
-	BootSeed               *[]byte        `cbor:"-75004,keyasint" json:"psa-boot-seed"`
-	CertificationReference *string        `cbor:"-75005,keyasint,omitempty" json:"psa-hwver,omitempty"`
-	SwComponents           *[]SwComponent `cbor:"-75006,keyasint,omitempty" json:"psa-software-components,omitempty"`
-	NoSwMeasurements       *uint          `cbor:"-75007,keyasint,omitempty" json:"psa-no-software-measurements,omitempty"`
-	Nonce                  *[]byte        `cbor:"-75008,keyasint" json:"psa-nonce"`
-	InstID                 *[]byte        `cbor:"-75009,keyasint" json:"psa-instance-id"`
-	VSI                    *string        `cbor:"-75010,keyasint,omitempty" json:"psa-verification-service-indicator,omitempty"`
+	Profile                *string       `cbor:"-75000,keyasint,omitempty" json:"psa-profile"`
+	ClientID               *int32        `cbor:"-75001,keyasint" json:"psa-client-id"`
+	SecurityLifeCycle      *uint16       `cbor:"-75002,keyasint" json:"psa-security-lifecycle"`
+	ImplID                 *[]byte       `cbor:"-75003,keyasint" json:"psa-implementation-id"`
+	BootSeed               *[]byte       `cbor:"-75004,keyasint" json:"psa-boot-seed"`
+	CertificationReference *string       `cbor:"-75005,keyasint,omitempty" json:"psa-hwver,omitempty"`
+	SwComponents           ISwComponents `cbor:"-75006,keyasint,omitempty" json:"psa-software-components,omitempty"`
+	NoSwMeasurements       *uint         `cbor:"-75007,keyasint,omitempty" json:"psa-no-software-measurements,omitempty"`
+	Nonce                  *[]byte       `cbor:"-75008,keyasint" json:"psa-nonce"`
+	InstID                 *[]byte       `cbor:"-75009,keyasint" json:"psa-instance-id"`
+	VSI                    *string       `cbor:"-75010,keyasint,omitempty" json:"psa-verification-service-indicator,omitempty"`
+
+	CanonicalProfile string `cbor:"-" json:"-"`
 }
 
-func newP1Claims(includeProfile bool) (IClaims, error) {
+func newP1Claims(includeProfile bool) IClaims {
 	if includeProfile {
 		profile := Profile1Name
-		return &P1Claims{Profile: &profile}, nil
+		return &P1Claims{
+			Profile:          &profile,
+			SwComponents:     &SwComponents[*SwComponent]{},
+			CanonicalProfile: Profile1Name,
+		}
 	}
 
-	return &P1Claims{}, nil
+	return &P1Claims{
+		SwComponents:     &SwComponents[*SwComponent]{},
+		CanonicalProfile: Profile1Name,
+	}
 }
 
 func (c P1Claims) Validate() error { //nolint:gocritic
@@ -89,7 +88,7 @@ func (c *P1Claims) SetBootSeed(v []byte) error {
 	if l != 32 {
 		return fmt.Errorf(
 			"%w: invalid length %d (MUST be 32 bytes)",
-			ErrWrongClaimSyntax, l,
+			ErrWrongSyntax, l,
 		)
 	}
 
@@ -103,7 +102,7 @@ func (c *P1Claims) SetCertificationReference(v string) error {
 		!CertificationReferenceP2RE.MatchString(v) {
 		return fmt.Errorf(
 			"%w: MUST be in EAN-13 or EAN-13+5 format",
-			ErrWrongClaimSyntax,
+			ErrWrongSyntax,
 		)
 	}
 
@@ -113,7 +112,7 @@ func (c *P1Claims) SetCertificationReference(v string) error {
 }
 
 // pass scs==nil to set the no-sw-measurements flag
-func (c *P1Claims) SetSoftwareComponents(scs []SwComponent) error {
+func (c *P1Claims) SetSoftwareComponents(scs []ISwComponent) error {
 	if scs == nil {
 		v := uint(1)
 		c.NoSwMeasurements = &v
@@ -121,11 +120,14 @@ func (c *P1Claims) SetSoftwareComponents(scs []SwComponent) error {
 		return nil
 	}
 
-	if err := ValidateSwComponents(scs); err != nil {
+	if c.SwComponents == nil {
+		c.SwComponents = &SwComponents[*SwComponent]{}
+	}
+
+	if err := c.SwComponents.Replace(scs); err != nil {
 		return err
 	}
 
-	c.SwComponents = &scs
 	c.NoSwMeasurements = nil
 
 	return nil
@@ -178,6 +180,8 @@ func (c *P1Claims) FromCBOR(buf []byte) error {
 }
 
 func (c *P1Claims) FromUnvalidatedCBOR(buf []byte) error {
+	c.Profile = nil // clear profile to make sure we take it from buf
+
 	err := dm.Unmarshal(buf, c)
 	if err != nil {
 		return fmt.Errorf("CBOR decoding of PSA claims failed: %w", err)
@@ -196,7 +200,16 @@ func (c P1Claims) ToCBOR() ([]byte, error) { //nolint:gocritic
 }
 
 func (c P1Claims) ToUnvalidatedCBOR() ([]byte, error) { //nolint:gocritic
+	var scs ISwComponents
+	if c.SwComponents != nil && c.SwComponents.IsEmpty() {
+		scs = c.SwComponents
+		c.SwComponents = nil
+	}
+
 	buf, err := em.Marshal(&c)
+	if scs != nil {
+		c.SwComponents = scs
+	}
 	if err != nil {
 		return nil, fmt.Errorf("CBOR encoding of PSA claims failed: %w", err)
 	}
@@ -219,6 +232,8 @@ func (c *P1Claims) FromJSON(buf []byte) error {
 }
 
 func (c *P1Claims) FromUnvalidatedJSON(buf []byte) error {
+	c.Profile = nil // clear profile to make sure we take it from buf
+
 	err := json.Unmarshal(buf, c)
 	if err != nil {
 		return fmt.Errorf("JSON decoding of PSA claims failed: %w", err)
@@ -237,7 +252,16 @@ func (c P1Claims) ToJSON() ([]byte, error) { //nolint:gocritic
 }
 
 func (c P1Claims) ToUnvalidatedJSON() ([]byte, error) { //nolint:gocritic
+	var scs ISwComponents
+	if c.SwComponents != nil && c.SwComponents.IsEmpty() {
+		scs = c.SwComponents
+		c.SwComponents = nil
+	}
+
 	buf, err := json.Marshal(&c)
+	if scs != nil {
+		c.SwComponents = scs
+	}
 	if err != nil {
 		return nil, fmt.Errorf("JSON encoding of PSA claims failed: %w", err)
 	}
@@ -252,13 +276,13 @@ func (c P1Claims) ToUnvalidatedJSON() ([]byte, error) { //nolint:gocritic
 
 func (c P1Claims) GetProfile() (string, error) { //nolint:gocritic
 	if c.Profile == nil {
-		return Profile1Name, nil
+		return c.CanonicalProfile, nil
 	}
 
 	p := *c.Profile
 
-	if p != Profile1Name {
-		return "", fmt.Errorf("%w: expecting %q, got %q", ErrWrongProfile, Profile1Name, p)
+	if p != c.CanonicalProfile {
+		return "", fmt.Errorf("%w: expecting %q, got %q", ErrWrongProfile, c.CanonicalProfile, p)
 	}
 
 	return p, nil
@@ -305,7 +329,7 @@ func (c P1Claims) GetBootSeed() ([]byte, error) { //nolint:gocritic
 	if l != 32 {
 		return nil, fmt.Errorf(
 			"%w: invalid length %d (MUST be 32 bytes)",
-			ErrWrongClaimSyntax, l,
+			ErrWrongSyntax, l,
 		)
 	}
 
@@ -321,7 +345,7 @@ func (c P1Claims) GetCertificationReference() (string, error) { //nolint:gocriti
 		!CertificationReferenceP2RE.MatchString(*c.CertificationReference) {
 		return "", fmt.Errorf(
 			"%w: MUST be in EAN-13 or EAN-13+5 format",
-			ErrWrongClaimSyntax,
+			ErrWrongSyntax,
 		)
 	}
 
@@ -329,11 +353,12 @@ func (c P1Claims) GetCertificationReference() (string, error) { //nolint:gocriti
 }
 
 // Caveat: this may return nil on success if psa-no-sw-measurement is asserted
-func (c P1Claims) GetSoftwareComponents() ([]SwComponent, error) { //nolint:gocritic
-	if c.SwComponents == nil {
+func (c P1Claims) GetSoftwareComponents() ([]ISwComponent, error) { //nolint:gocritic
+	if c.SwComponents == nil || c.SwComponents.IsEmpty() {
 		// psa-no-sw-measurement must be asserted
 		if c.NoSwMeasurements == nil {
-			return nil, ErrMandatoryClaimMissing
+			return nil, fmt.Errorf("%w (MUST have at least one sw component or no-sw-measurements set)",
+				ErrMandatoryClaimMissing)
 		}
 		return nil, nil
 	}
@@ -343,15 +368,11 @@ func (c P1Claims) GetSoftwareComponents() ([]SwComponent, error) { //nolint:gocr
 		return nil,
 			fmt.Errorf(
 				"%w: psa-no-sw-measurement and psa-software-components cannot be present at the same time",
-				ErrWrongClaimSyntax,
+				ErrWrongSyntax,
 			)
 	}
 
-	if err := ValidateSwComponents(*c.SwComponents); err != nil {
-		return nil, err
-	}
-
-	return *c.SwComponents, nil
+	return c.SwComponents.Values()
 }
 
 func (c P1Claims) GetNonce() ([]byte, error) { //nolint:gocritic

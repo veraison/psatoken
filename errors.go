@@ -17,8 +17,11 @@ var (
 
 	ErrOptionalClaimMissing  = fmt.Errorf("%w claim", ErrMissingOptional)
 	ErrMandatoryClaimMissing = fmt.Errorf("%w claim", ErrMissingMandatory)
-	ErrWrongClaimSyntax      = fmt.Errorf("%w for claim", ErrWrongSyntax)
 	ErrClaimNotInProfile     = fmt.Errorf("claim %w", ErrNotInProfile)
+
+	ErrOptionalFieldMissing  = fmt.Errorf("%w field", ErrMissingOptional)
+	ErrMandatoryFieldMissing = fmt.Errorf("%w field", ErrMissingMandatory)
+	ErrFieldNotInProfile     = fmt.Errorf("field %w", ErrNotInProfile)
 )
 
 // FilterError takes the output of IClaims getters and returns only the

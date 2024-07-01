@@ -111,7 +111,7 @@ func LifeCycleToState(v uint16) LifeCycleState {
 
 func ValidateSecurityLifeCycle(v uint16) error {
 	if !LifeCycleToState(v).IsValid() {
-		return fmt.Errorf("%w: value %d is invalid", ErrWrongClaimSyntax, v)
+		return fmt.Errorf("%w: value %d is invalid", ErrWrongSyntax, v)
 	}
 
 	return nil
@@ -128,7 +128,7 @@ func ValidateImplID(v []byte) error {
 	if l != ImplIDLen {
 		return fmt.Errorf(
 			"%w: invalid length %d (MUST be %d bytes)",
-			ErrWrongClaimSyntax, l, ImplIDLen,
+			ErrWrongSyntax, l, ImplIDLen,
 		)
 	}
 
@@ -141,7 +141,7 @@ func ValidatePSAHashType(b []byte) error {
 	if l != 32 && l != 48 && l != 64 {
 		return fmt.Errorf(
 			"%w: length %d (hash MUST be 32, 48 or 64 bytes)",
-			ErrWrongClaimSyntax, l,
+			ErrWrongSyntax, l,
 		)
 	}
 
@@ -154,14 +154,14 @@ func ValidateInstID(v []byte) error {
 	if l != InstIDLen {
 		return fmt.Errorf(
 			"%w: invalid length %d (MUST be %d bytes)",
-			ErrWrongClaimSyntax, l, InstIDLen,
+			ErrWrongSyntax, l, InstIDLen,
 		)
 	}
 
 	if v[0] != 0x01 {
 		return fmt.Errorf(
 			"%w: invalid EUID type (MUST be RAND=0x01)",
-			ErrWrongClaimSyntax,
+			ErrWrongSyntax,
 		)
 	}
 
@@ -171,7 +171,7 @@ func ValidateInstID(v []byte) error {
 func ValidateVSI(v string) error {
 	// https://github.com/thomas-fossati/draft-psa-token/issues/59
 	if v == "" {
-		return fmt.Errorf("%w: empty string", ErrWrongClaimSyntax)
+		return fmt.Errorf("%w: empty string", ErrWrongSyntax)
 	}
 
 	return nil
@@ -179,7 +179,7 @@ func ValidateVSI(v string) error {
 
 func ValidateHashAlgID(v string) error {
 	if v == "" {
-		return fmt.Errorf("%w: empty string", ErrWrongClaimSyntax)
+		return fmt.Errorf("%w: empty string", ErrWrongSyntax)
 	}
 
 	// It is recommended that IANA Hash Function Textual Names be used for setting HashAlgID
@@ -187,12 +187,12 @@ func ValidateHashAlgID(v string) error {
 	case "md2", "md5", "sha-1", "sha-224", "sha-256", "sha-384", "sha-512", "shake128", "shake256":
 		return nil
 	}
-	return fmt.Errorf("%w: wrong syntax", ErrWrongClaimSyntax)
+	return fmt.Errorf("%w: wrong syntax", ErrWrongSyntax)
 }
 
-func ValidateSwComponents(scs []SwComponent) error {
+func ValidateSwComponents(scs []ISwComponent) error {
 	if len(scs) == 0 {
-		return fmt.Errorf("%w: there MUST be at least one entry", ErrWrongClaimSyntax)
+		return fmt.Errorf("%w: there MUST be at least one entry", ErrWrongSyntax)
 	}
 
 	for i, sc := range scs {
