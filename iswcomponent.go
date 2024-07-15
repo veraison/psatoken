@@ -5,6 +5,8 @@ package psatoken
 
 import "fmt"
 
+// ISwComponent defines the interface for the software component composite
+// claim.
 type ISwComponent interface {
 	Validate() error
 
@@ -21,6 +23,10 @@ type ISwComponent interface {
 	SetMeasurementDesc(v string) error
 }
 
+// ValidateSwComponent returns an error if validation fails for any of the
+// fields of a software component claim. This function may be used by new
+// ISwComponent implementations that do not embed existing SwComponent, and so
+// cannot rely on its Validate() method.
 func ValidateSwComponent(c ISwComponent) error {
 	if err := FilterError(c.GetMeasurementType()); err != nil {
 		return fmt.Errorf("measurement type: %w", err)

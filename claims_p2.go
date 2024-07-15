@@ -13,6 +13,7 @@ import (
 
 const Profile2Name = "http://arm.com/psa/2.0.0"
 
+// Profile2 provides the IClaims implementation associated with http://arm.com/psa/2.0.0
 type Profile2 struct{}
 
 func (o Profile2) GetName() string {
@@ -24,6 +25,7 @@ func (o Profile2) GetClaims() IClaims {
 }
 
 // P2Claims are associated with profile "http://arm.com/psa/2.0.0"
+// See https://datatracker.ietf.org/doc/html/draft-tschofenig-rats-psa-token-13
 type P2Claims struct {
 	Profile                *eat.Profile  `cbor:"265,keyasint" json:"eat-profile"`
 	ClientID               *int32        `cbor:"2394,keyasint" json:"psa-client-id"`
@@ -36,6 +38,11 @@ type P2Claims struct {
 	InstID                 *eat.UEID     `cbor:"256,keyasint" json:"psa-instance-id"`
 	VSI                    *string       `cbor:"2400,keyasint,omitempty" json:"psa-verification-service-indicator,omitempty"`
 
+	// CanonicalProfile contains the "correct" profile name associated with
+	// this IClaims implementation (e.g. "http://arm.com/psa/2.0.0" for
+	// P2Claims). The reason this is a field rather than a global constant
+	// is so that derived profiles can embed this struct and rely on its
+	// existing validation methods.
 	CanonicalProfile string `cbor:"-" json:"-"`
 }
 

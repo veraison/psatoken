@@ -9,6 +9,10 @@ import (
 	"reflect"
 )
 
+// SwComponents is the generic implementation of ISwComponents interface that
+// should suffice for most purposes. This provides a container of concrete
+// types for marashaling purposes (we can't unmarshal a slice of interfaces,
+// such as []ISwComponent, with specifying a concrete type to use).
 type SwComponents[I ISwComponent] struct {
 	values []I // nolint:structcheck
 }
@@ -98,4 +102,3 @@ func validateAndConvert[I ISwComponent](vals []ISwComponent) ([]I, error) {
 
 	return ret, nil
 }
-

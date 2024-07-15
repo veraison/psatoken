@@ -11,8 +11,21 @@ import (
 	"github.com/veraison/psatoken/encoding"
 )
 
+// IProfile defines a way of obtaining an implementation of IClaims that
+// corresponds to a particular profiles of a PSA token. A profile can
+// - define the CBOR and JSON keys used for the claims defined by IClaims
+// - indicate which claims are optional and which are mandatory
+// - define extra claims in addition to the ones defined by IClaims
+// - disallow some of the claims defined by IClaims
+// Essentially, a Profile fully defines a concrete implementation of IClaims.
+// This library provides two "base" PSA profile implementations: Profile1 and
+// Profile2, corresponding to  PSA_IOT_PROFILE_1 and http://arm.com/psa/2.0.0
+// respectively.
 type IProfile interface {
+	// GetName returns the name of this profile.
 	GetName() string
+	// GetClaims returns a new instance of the IClaims implementation
+	// associated with this profile.
 	GetClaims() IClaims
 }
 
@@ -29,6 +42,11 @@ func DecodeClaims(buf []byte) (IClaims, error) {
 	return DecodeClaimsFromCBOR(buf)
 }
 
+// DecodeClaimsFromCBOR returns an IClaims implementation instance populated
+// from the provided CBOR buf. The implementation used is determined by value
+// of the eat_profile (key 265) in the provided CBOR object. In the absence of
+// this claim, Profile1 (PSA_IOT_PROFILE_1) is assumed. Claims are validated
+// according to the profile as part of decoding.
 func DecodeClaimsFromCBOR(buf []byte) (IClaims, error) {
 	claims, err := DecodeUnvalidatedClaimsFromCBOR(buf)
 	if err != nil {
@@ -47,6 +65,12 @@ func DecodeUnvalidatedClaims(buf []byte) (IClaims, error) {
 	return DecodeUnvalidatedClaimsFromCBOR(buf)
 }
 
+// DecodeUnvalidatedClaimsFromCBOR returns an IClaims implementation instance
+// populated from the provided CBOR buf. The implementation used is determined
+// by value of the eat_profile (key 265) in the provided CBOR object. In the
+// absence of this key, Profile1 (PSA_IOT_PROFILE_1) is assumed. No validation
+// is performed to confirm that the decoded claims actually conform to the
+// stated profile.
 func DecodeUnvalidatedClaimsFromCBOR(buf []byte) (IClaims, error) {
 	selector := struct {
 		// note: code point 265 is defined as the eat_profile claim in
@@ -93,6 +117,11 @@ func DecodeJSONClaims(buf []byte) (IClaims, error) {
 	return DecodeClaimsFromJSON(buf)
 }
 
+// DecodeClaimsFromJSON returns an IClaims implementation instance populated
+// from the provided JSON buf. The implementation used is determined by value
+// of the profile field in the provided JSON object. In the absence of
+// this field, Profile1 (PSA_IOT_PROFILE_1) is assumed. Claims are validated
+// according to the profile as part of decoding.
 func DecodeClaimsFromJSON(buf []byte) (IClaims, error) {
 	claims, err := DecodeUnvalidatedClaimsFromJSON(buf)
 	if err != nil {
@@ -111,6 +140,12 @@ func DecodeUnvalidatedJSONClaims(buf []byte) (IClaims, error) {
 	return DecodeUnvalidatedClaimsFromJSON(buf)
 }
 
+// DecodeUnvalidatedClaimsFromJSON returns an IClaims implementation instance
+// populated from the provided JSON buf. The implementation used is determined
+// by value of the profile field in the provided JSON object. In the absence
+// of this field, Profile1 (PSA_IOT_PROFILE_1) is assumed. No validation is
+// performed to confirm that the decoded claims actually conform to the stated
+// profile.
 func DecodeUnvalidatedClaimsFromJSON(buf []byte) (IClaims, error) {
 	var decoded map[string]interface{}
 	if err := json.Unmarshal(buf, &decoded); err != nil {

@@ -11,6 +11,7 @@ import (
 
 const Profile1Name = "PSA_IOT_PROFILE_1"
 
+// Profile1 provides the IClaims implementation associated with PSA_IOT_PROFILE_1.
 type Profile1 struct{}
 
 func (o Profile1) GetName() string {
@@ -21,7 +22,8 @@ func (o Profile1) GetClaims() IClaims {
 	return newP1Claims(true)
 }
 
-// P1Claims are associated with profile "PSA_IOT_PROFILE_1"
+// P1Claims defines claims associated with profile "PSA_IOT_PROFILE_1".
+// See https://arm-software.github.io/psa-api/attestation/1.0/overview/report.html
 type P1Claims struct {
 	Profile                *string       `cbor:"-75000,keyasint,omitempty" json:"psa-profile"`
 	ClientID               *int32        `cbor:"-75001,keyasint" json:"psa-client-id"`
@@ -35,6 +37,11 @@ type P1Claims struct {
 	InstID                 *[]byte       `cbor:"-75009,keyasint" json:"psa-instance-id"`
 	VSI                    *string       `cbor:"-75010,keyasint,omitempty" json:"psa-verification-service-indicator,omitempty"`
 
+	// CanonicalProfile contains the "correct" profile name associated with
+	// this IClaims implementation (e.g. "PSA_IOT_PROFILE_1" for P1Claims).
+	// The reason this is a field rather than a global constant is so that
+	// derived profiles can embed this struct and rely on its existing
+	// validation methods.
 	CanonicalProfile string `cbor:"-" json:"-"`
 }
 
