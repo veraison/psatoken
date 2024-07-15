@@ -65,7 +65,7 @@ func NewClaims(profile string) (IClaims, error) {
 // ValidateClaims returns an error if validation fails for any of the standard
 // PSA cliams defined by IClaims. This function may be used by new profiles
 // whos implementations do not embed existing IClaims implementations and so
-// cannot benefit from their existing Validate() methods.
+// cannot rely on their existing Validate() methods.
 func ValidateClaims(c IClaims) error {
 	if err := FilterError(c.GetProfile()); err != nil {
 		return fmt.Errorf("validating profile: %w", err)

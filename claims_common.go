@@ -31,6 +31,9 @@ const (
 	SecurityLifecycleDecommissionedMax         = 0x60ff
 )
 
+// LifeCycleState enumerates the possible states of the PSA security life
+// cycle. Each state is represented by a range of values, so different security
+// lifecycle claim values can map onto the same state.
 type LifeCycleState uint16
 
 const (
@@ -70,6 +73,8 @@ func (o LifeCycleState) String() string {
 	}
 }
 
+// LifeCycleToState translates PSA life cycle claim value onto corresponding
+// life cycle state.
 func LifeCycleToState(v uint16) LifeCycleState {
 	if v >= SecurityLifecycleUnknownMin &&
 		v <= SecurityLifecycleUnknownMax {
@@ -109,6 +114,8 @@ func LifeCycleToState(v uint16) LifeCycleState {
 	return StateInvalid
 }
 
+// ValidateSecurityLifeCycle returns an error if the provided value does not
+// correspond to a valid PSA security life cycle state.
 func ValidateSecurityLifeCycle(v uint16) error {
 	if !LifeCycleToState(v).IsValid() {
 		return fmt.Errorf("%w: value %d is invalid", ErrWrongSyntax, v)
@@ -122,6 +129,8 @@ var (
 	CertificationReferenceP2RE = regexp.MustCompile(`^\d{13}-\d{5}$`)
 )
 
+// ValidateImplID returns an error if the provided value is not a valid PSA
+// implementation ID.
 func ValidateImplID(v []byte) error {
 	l := len(v)
 
@@ -135,6 +144,9 @@ func ValidateImplID(v []byte) error {
 	return nil
 }
 
+// ValidatePSAHashType returns an error if the provided value is not a valid
+// PSA hash. A valid PSA hash must be a sequence of exactly 32, 48, or 64
+// bytes.
 func ValidatePSAHashType(b []byte) error {
 	l := len(b)
 
@@ -148,6 +160,8 @@ func ValidatePSAHashType(b []byte) error {
 	return nil
 }
 
+// ValidateInstID returns an error if the provided value is not a valid PSA
+// instance ID.
 func ValidateInstID(v []byte) error {
 	l := len(v)
 
@@ -168,6 +182,8 @@ func ValidateInstID(v []byte) error {
 	return nil
 }
 
+// ValidateVSI returns an error if the provided value is not a valid
+// verification service indicator.
 func ValidateVSI(v string) error {
 	// https://github.com/thomas-fossati/draft-psa-token/issues/59
 	if v == "" {
@@ -177,6 +193,10 @@ func ValidateVSI(v string) error {
 	return nil
 }
 
+// ValidateHashAlgID returns an error if the provided value is not a IANA Hash
+// Function Textual Name for one of the algorithms supported by PSA. Must be
+// one of: "md2", "md5", "sha-1", "sha-224", "sha-256", "sha-384", "sha-512",
+// "shake128", or "shake256".
 func ValidateHashAlgID(v string) error {
 	if v == "" {
 		return fmt.Errorf("%w: empty string", ErrWrongSyntax)
@@ -190,6 +210,8 @@ func ValidateHashAlgID(v string) error {
 	return fmt.Errorf("%w: wrong syntax", ErrWrongSyntax)
 }
 
+// ValidateSwComponents return an error if one or more of the provided
+// []ISwComponent is invalid, or if the slice is empty.
 func ValidateSwComponents(scs []ISwComponent) error {
 	if len(scs) == 0 {
 		return fmt.Errorf("%w: there MUST be at least one entry", ErrWrongSyntax)
@@ -204,6 +226,8 @@ func ValidateSwComponents(scs []ISwComponent) error {
 	return nil
 }
 
+// ValidateNonce returns an error if the provided value is not a valid PSA
+// nonce.
 func ValidateNonce(v []byte) error {
 	return ValidatePSAHashType(v)
 }
