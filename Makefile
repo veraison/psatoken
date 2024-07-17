@@ -4,6 +4,7 @@ export GO111MODULE := on
 export SHELL := /bin/bash
 
 GOPKG := github.com/veraison/psatoken
+GOPKG += github.com/veraison/psatoken/encoding
 
 GOLINT ?= golangci-lint
 

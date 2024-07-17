@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/veraison/psatoken/encoding"
 )
 
 func Test_getJSONTag(t *testing.T) {
@@ -71,7 +72,7 @@ func Test_getJSONTag(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			tag, err := getJSONTag(tc.Value)
+			tag, err := encoding.GetProfileJSONTag(tc.Value)
 
 			if tc.ExpectedTag != "" {
 				assert.Equal(t, tc.ExpectedTag, tag)

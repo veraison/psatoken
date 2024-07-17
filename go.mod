@@ -3,7 +3,7 @@ module github.com/veraison/psatoken
 go 1.21
 
 require (
-	github.com/fxamacker/cbor/v2 v2.4.0
+	github.com/fxamacker/cbor/v2 v2.5.0
 	github.com/lestrrat-go/jwx/v2 v2.0.8
 	github.com/stretchr/testify v1.8.1
 	github.com/veraison/eat v0.0.0-20210331113810-3da8a4dd42ff
