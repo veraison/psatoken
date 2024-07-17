@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
-	"strings"
+
+	"github.com/veraison/psatoken/encoding"
 )
 
 type IProfile interface {
@@ -154,7 +154,6 @@ type profileEntry struct {
 
 var profilesRegister = map[string]profileEntry{}
 
-
 func registerDefaultProfile(p IProfile) error {
 	return registerProfileUnderName("", p)
 }
@@ -164,7 +163,7 @@ func registerProfileUnderName(name string, profile IProfile) error {
 		return fmt.Errorf("profile %q already registered", name)
 	}
 
-	tag, err := getJSONTag(profile.GetClaims())
+	tag, err := encoding.GetProfileJSONTag(profile.GetClaims())
 	if err != nil {
 		return fmt.Errorf("could not identify JSON tag for Profile field: %w", err)
 	}
@@ -172,57 +171,4 @@ func registerProfileUnderName(name string, profile IProfile) error {
 	profilesRegister[name] = profileEntry{Profile: profile, JSONTag: tag}
 
 	return nil
-}
-
-// getJSONTag returns the json tag associated with th profile field. The field
-// is identified by the corresponding CBOR tag, or, if an appropriate CBOR tag is
-// not found, by the field name.
-func getJSONTag(iface interface{}) (string, error) {
-	structType := reflect.TypeOf(iface)
-	structVal := reflect.ValueOf(iface)
-
-	if structType.Kind() == reflect.Pointer {
-		structType = structType.Elem()
-		structVal = structVal.Elem()
-	}
-
-	var foundByCBORKey *reflect.StructField
-	var foundByFieldName *reflect.StructField
-
-	for i := 0; i < structVal.NumField(); i++ {
-		typeField := structType.Field(i)
-
-		cborTag, ok := typeField.Tag.Lookup("cbor")
-		if ok {
-			cborKey := strings.Split(cborTag, ",")[0]
-			if cborKey == "265" || cborKey == "-75000" { // eat_profile or psa-profile
-				foundByCBORKey = &typeField
-				break
-			}
-		} else if typeField.Name == "Profile" {
-			foundByFieldName = &typeField
-			// note: not breaking here as there could be
-			// the CBOR profile tag in a later field, and
-			// we want to use that in preference to the
-			// field name.
-		}
-
-	}
-
-	var jsonTag string
-	var ok bool
-
-	if foundByCBORKey != nil {
-		jsonTag, ok = foundByCBORKey.Tag.Lookup("json")
-	} else if foundByFieldName != nil {
-		jsonTag, ok = foundByFieldName.Tag.Lookup("json")
-	} else {
-		return "", errors.New("could not identify profile field")
-	}
-
-	if !ok {
-		return "", errors.New(`no "json" tag associated with profile field`)
-	}
-
-	return strings.Split(jsonTag, ",")[0], nil
 }
