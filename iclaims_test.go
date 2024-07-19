@@ -22,7 +22,7 @@ func Test_DecodeClaims_p1_ok(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv)
-		c, err := DecodeClaimsFromCBOR(buf)
+		c, err := DecodeAndValidateClaimsFromCBOR(buf)
 
 		assert.NoError(t, err)
 
@@ -39,7 +39,7 @@ func Test_DecodeClaims_p1_failure(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv)
-		_, err := DecodeClaimsFromCBOR(buf)
+		_, err := DecodeAndValidateClaimsFromCBOR(buf)
 
 		expectedError := `validating nonce: missing mandatory claim`
 
@@ -56,7 +56,7 @@ func Test_DecodeClaims_p2_ok(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv)
-		c, err := DecodeClaimsFromCBOR(buf)
+		c, err := DecodeAndValidateClaimsFromCBOR(buf)
 
 		assert.NoError(t, err)
 
@@ -73,7 +73,7 @@ func Test_DecodeClaims_p2_failure(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv)
-		_, err := DecodeClaimsFromCBOR(buf)
+		_, err := DecodeAndValidateClaimsFromCBOR(buf)
 
 		expectedError := `validating nonce: missing mandatory claim`
 
@@ -94,7 +94,7 @@ func Test_DecodeUnvalidatedClaims(t *testing.T) {
 
 	for _, tv := range tvs {
 		buf := mustHexDecode(t, tv.Input)
-		v, err := DecodeUnvalidatedClaims(buf)
+		v, err := DecodeClaimsFromCBOR(buf)
 
 		assert.NoError(t, err)
 		assert.IsType(t, tv.Expected, v)
@@ -238,9 +238,9 @@ func Test_ToJSON_invalid(t *testing.T) {
 		c, err := NewClaims(p)
 		require.NoError(t, err)
 
-		expectedErr := `validation of PSA claims failed: validating security lifecycle: missing mandatory claim`
+		expectedErr := `validating security lifecycle: missing mandatory claim`
 
-		_, err = c.ToJSON()
+		_, err = ValidateAndEncodeClaimsToJSON(c)
 		assert.EqualError(t, err, expectedErr)
 	}
 }
@@ -249,7 +249,7 @@ func Test_DecodeJSONClaims_P2(t *testing.T) {
 	buf, err := os.ReadFile("testvectors/json/test-token-valid-minimalist-p2.json")
 	require.NoError(t, err)
 
-	c, err := DecodeClaimsFromJSON(buf)
+	c, err := DecodeAndValidateClaimsFromJSON(buf)
 	assert.NoError(t, err)
 	actualProfile, err := c.GetProfile()
 	assert.NoError(t, err)
@@ -260,7 +260,7 @@ func Test_DecodeJSONClaims_P1(t *testing.T) {
 	buf, err := os.ReadFile("testvectors/json/test-token-valid-minimalist-p1.json")
 	require.NoError(t, err)
 
-	c, err := DecodeClaimsFromJSON(buf)
+	c, err := DecodeAndValidateClaimsFromJSON(buf)
 	assert.NoError(t, err)
 	actualProfile, err := c.GetProfile()
 	assert.NoError(t, err)
@@ -289,7 +289,7 @@ func Test_DecodeUnvalidatedJSONClaims(t *testing.T) {
 		buf, err := os.ReadFile(tv.Path)
 		require.NoError(t, err)
 
-		v, err := DecodeUnvalidatedClaimsFromJSON(buf)
+		v, err := DecodeClaimsFromJSON(buf)
 
 		assert.NoError(t, err)
 		assert.IsType(t, tv.Expected, v)

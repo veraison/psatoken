@@ -14,6 +14,37 @@ import (
 	cose "github.com/veraison/go-cose"
 )
 
+// DecodeAndValidateEvidenceFromCOSE returns an *Evidence containing COSE_Sign1
+// message decoded from buf, and IClaims extracted from the message's payload.
+// An error is returned if the decoding of either COSE_Sign1 message or the
+// IClaims fails, or if the IClaims are not valid.
+func DecodeAndValidateEvidenceFromCOSE(buf []byte) (*Evidence, error) {
+	ev, err := DecodeEvidenceFromCOSE(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ev.Claims.Validate(); err != nil {
+		return nil, err
+	}
+
+	return ev, nil
+}
+
+// DecodeEvidenceFromCOSE returns an *Evidence containing COSE_Sign1 messaged
+// decoded from buf, and IClaims extracted from the message's payload. An error
+// is returned if the decoding of either COSE_Sign1 messarge or the IClaims
+// fails.
+func DecodeEvidenceFromCOSE(buf []byte) (*Evidence, error) {
+	ev := &Evidence{}
+
+	if err := ev.UnmarshalCOSE(buf); err != nil {
+		return nil, err
+	}
+
+	return ev, nil
+}
+
 // Evidence is the wrapper around the PSA token, including the COSE envelope and
 // the underlying claims
 // nolint: golint
@@ -57,9 +88,9 @@ func (e *Evidence) GetImplementationID() *[]byte {
 	return &implID
 }
 
-// FromCOSE extracts the PSA claims wrapped in the supplied CWT. As per spec,
-// the only acceptable security envelope is COSE_Sign1.
-func (e *Evidence) FromCOSE(cwt []byte) error {
+// UnmarshalCOSE extracts unvalidated claims wrapped in the supplied CWT.
+// As per spec, the only acceptable security envelope is COSE_Sign1.
+func (e *Evidence) UnmarshalCOSE(cwt []byte) error {
 	var err error
 
 	e.message = cose.NewSign1Message()
@@ -75,76 +106,36 @@ func (e *Evidence) FromCOSE(cwt []byte) error {
 	return nil
 }
 
-// FromUnvalidatedCOSE extracts unvalidated claims wrapped in the supplied CWT.
-// As per spec, the only acceptable security envelope is COSE_Sign1.
-func (e *Evidence) FromUnvalidatedCOSE(cwt []byte) error {
-	var err error
+// ValidateAndSign returns the Evidence wrapped in a CWT according to the supplied
+// go-cose Signer.  (For now only COSE-Sign1 is supported.)
+func (e *Evidence) ValidateAndSign(signer cose.Signer) ([]byte, error) {
 
 	e.message = cose.NewSign1Message()
 
-	if err = e.message.UnmarshalCBOR(cwt); err != nil {
-		return fmt.Errorf("failed CBOR decoding for CWT: %w", err)
+	var err error
+	e.message.Payload, err = ValidateAndEncodeClaimsToCBOR(e.Claims)
+	if err != nil {
+		return nil, err
 	}
 
-	if e.Claims, err = DecodeUnvalidatedClaims(e.message.Payload); err != nil {
-		return fmt.Errorf("failed CBOR decoding of PSA claims: %w", err)
-	}
+	return e.doSign(signer)
 
-	return nil
 }
 
-// Sign returns the Evidence wrapped in a CWT according to the supplied
-// go-cose Signer.  (For now only COSE-Sign1 is supported.)
+// Sign returns the Evidence wrapped in a CWT according to the
+// supplied go-cose Signer.  (For now only COSE-Sign1 is supported.) Unlike
+// Sign, this does not validate the evidence before signing.
 func (e *Evidence) Sign(signer cose.Signer) ([]byte, error) {
 
 	e.message = cose.NewSign1Message()
 
 	var err error
-	e.message.Payload, err = e.Claims.ToCBOR()
+	e.message.Payload, err = EncodeClaimsToCBOR(e.Claims)
 	if err != nil {
 		return nil, err
 	}
 
 	return e.doSign(signer)
-
-}
-
-// SignUnvalidated returns the Evidence wrapped in a CWT according to the
-// supplied go-cose Signer.  (For now only COSE-Sign1 is supported.) Unlike
-// Sign, this does not validate the evidence before signing.
-func (e *Evidence) SignUnvalidated(signer cose.Signer) ([]byte, error) {
-
-	e.message = cose.NewSign1Message()
-
-	var err error
-	e.message.Payload, err = e.Claims.ToUnvalidatedCBOR()
-	if err != nil {
-		return nil, err
-	}
-
-	return e.doSign(signer)
-}
-
-func (e *Evidence) doSign(signer cose.Signer) ([]byte, error) {
-	alg := signer.Algorithm()
-
-	if strings.Contains(alg.String(), "unknown algorithm value") {
-		return nil, errors.New("signer has no algorithm")
-	}
-
-	e.message.Headers.Protected.SetAlgorithm(alg)
-
-	err := e.message.Sign(rand.Reader, []byte(""), signer)
-	if err != nil {
-		return nil, err
-	}
-
-	wrap, err := e.message.MarshalCBOR()
-	if err != nil {
-		return nil, err
-	}
-
-	return wrap, nil
 }
 
 // Verify verifies any attached signature for the Evidence.
@@ -170,4 +161,26 @@ func (e *Evidence) Verify(pk crypto.PublicKey) error {
 	}
 
 	return nil
+}
+
+func (e *Evidence) doSign(signer cose.Signer) ([]byte, error) {
+	alg := signer.Algorithm()
+
+	if strings.Contains(alg.String(), "unknown algorithm value") {
+		return nil, errors.New("signer has no algorithm")
+	}
+
+	e.message.Headers.Protected.SetAlgorithm(alg)
+
+	err := e.message.Sign(rand.Reader, []byte(""), signer)
+	if err != nil {
+		return nil, err
+	}
+
+	wrap, err := e.message.MarshalCBOR()
+	if err != nil {
+		return nil, err
+	}
+
+	return wrap, nil
 }
