@@ -4,6 +4,7 @@
 package psatoken
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -73,9 +74,9 @@ func Test_P2Claims_Validate_mandatory_only_claims(t *testing.T) {
 func Test_P2Claims_ToCBOR_invalid(t *testing.T) {
 	c := newP2Claims()
 
-	expectedErr := `validation of PSA claims failed: validating security lifecycle: missing mandatory claim`
+	expectedErr := `validating security lifecycle: missing mandatory claim`
 
-	_, err := c.ToCBOR()
+	_, err := ValidateAndEncodeClaimsToCBOR(c)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -85,7 +86,7 @@ func Test_P2Claims_ToCBOR_all_claims(t *testing.T) {
 
 	expected := mustHexDecode(t, testEncodedP2ClaimsAll)
 
-	actual, err := c.ToCBOR()
+	actual, err := ValidateAndEncodeClaimsToCBOR(c)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
@@ -96,7 +97,7 @@ func Test_P2Claims_ToCBOR_mandatory_only_claims(t *testing.T) {
 
 	expected := mustHexDecode(t, testEncodedP2ClaimsMandatoryOnly)
 
-	actual, err := c.ToCBOR()
+	actual, err := ValidateAndEncodeClaimsToCBOR(c)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
@@ -105,10 +106,9 @@ func Test_P2Claims_ToCBOR_mandatory_only_claims(t *testing.T) {
 func Test_P2Claims_FromCBOR_bad_input(t *testing.T) {
 	buf := mustHexDecode(t, testNotCBOR)
 
-	expectedErr := "CBOR decoding of PSA claims failed: unexpected EOF"
+	expectedErr := "unexpected EOF"
 
-	c := newP2Claims()
-	err := c.FromCBOR(buf)
+	_, err := DecodeAndValidateClaimsFromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -116,10 +116,9 @@ func Test_P2Claims_FromCBOR_bad_input(t *testing.T) {
 func Test_P2Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedP2ClaimsMissingMandatoryNonce)
 
-	expectedErr := "validation of PSA claims failed: validating nonce: missing mandatory claim"
+	expectedErr := "validating nonce: missing mandatory claim"
 
-	c := newP2Claims()
-	err := c.FromCBOR(buf)
+	_, err := DecodeAndValidateClaimsFromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -127,10 +126,9 @@ func Test_P2Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 func Test_P2Claims_FromCBOR_invalid_multi_nonce(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedP2ClaimsInvalidMultiNonce)
 
-	expectedErr := "validation of PSA claims failed: validating nonce: wrong syntax: got 2 nonces, want 1"
+	expectedErr := "validating nonce: wrong syntax: got 2 nonces, want 1"
 
-	c := newP2Claims()
-	err := c.FromCBOR(buf)
+	_, err := DecodeAndValidateClaimsFromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -138,8 +136,7 @@ func Test_P2Claims_FromCBOR_invalid_multi_nonce(t *testing.T) {
 func Test_P2Claims_FromCBOR_ok_mandatory_only(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedP2ClaimsMandatoryOnly)
 
-	c := newP2Claims()
-	err := c.FromCBOR(buf)
+	c, err := DecodeAndValidateClaimsFromCBOR(buf)
 	assert.NoError(t, err)
 
 	// mandatory
@@ -223,9 +220,12 @@ func Test_P2Claims_FromJSON_positives(t *testing.T) {
 		buf, err := os.ReadFile(fn)
 		require.NoError(t, err)
 
-		claimsSet := newP2Claims()
+		claims := newP2Claims()
 
-		err = claimsSet.FromJSON(buf)
+		err = json.Unmarshal(buf, claims)
+		require.NoError(t, err)
+
+		err = claims.Validate()
 		assert.NoError(t, err, "test vector %d failed", i)
 	}
 }
@@ -267,21 +267,20 @@ func Test_P2Claims_FromJSON_negatives(t *testing.T) {
 		buf, err := os.ReadFile(fn)
 		require.NoError(t, err)
 
-		var claimsSet P2Claims
+		claims := newP2Claims()
 
-		err = claimsSet.FromJSON(buf)
+		err = json.Unmarshal(buf, claims)
+		require.NoError(t, err)
+
+		err = claims.Validate()
 		assert.Error(t, err, "test vector %d failed", i)
 	}
 }
 
 func TestP2Claims_FromJSON_invalid_json(t *testing.T) {
-	tv := testNotJSON
+	expectedErr := `unexpected end of JSON input`
 
-	expectedErr := `JSON decoding of PSA claims failed: unexpected end of JSON input`
-
-	c := newP2Claims()
-
-	err := c.FromJSON(tv)
+	_, err := DecodeAndValidateClaimsFromJSON(testNotJSON)
 	assert.EqualError(t, err, expectedErr)
 }
 
@@ -306,7 +305,7 @@ func Test_P2Claims_ToJSON_ok(t *testing.T) {
 	"psa-verification-service-indicator": "https://veraison.example/v1/challenge-response"	
 }`
 
-	actual, err := c.ToJSON()
+	actual, err := ValidateAndEncodeClaimsToJSON(c)
 	assert.NoError(t, err)
 	assert.JSONEq(t, expected, string(actual))
 }

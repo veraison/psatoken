@@ -21,14 +21,12 @@ func TestEvidence_p1_sign_and_verify(t *testing.T) {
 	err := EvidenceIn.SetClaims(mustBuildValidP1Claims(t, true, false))
 	assert.NoError(t, err)
 
-	cwt, err := EvidenceIn.Sign(tokenSigner)
+	cwt, err := EvidenceIn.ValidateAndSign(tokenSigner)
 	assert.NoError(t, err, "signing failed")
 
 	fmt.Printf("PSA evidence (profile 1): %x\n", cwt)
 
-	var EvidenceOut Evidence
-
-	err = EvidenceOut.FromCOSE(cwt)
+	EvidenceOut, err := DecodeAndValidateEvidenceFromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
 	pk := pubKeyFromJWK(t, testECKeyA)
@@ -45,14 +43,12 @@ func TestEvidence_p2_sign_and_verify(t *testing.T) {
 	err := EvidenceIn.SetClaims(mustBuildValidP2Claims(t, true))
 	assert.NoError(t, err)
 
-	cwt, err := EvidenceIn.Sign(tokenSigner)
+	cwt, err := EvidenceIn.ValidateAndSign(tokenSigner)
 	assert.NoError(t, err, "signing failed")
 
 	fmt.Printf("PSA evidence (profile 2): %x\n", cwt)
 
-	var EvidenceOut Evidence
-
-	err = EvidenceOut.FromCOSE(cwt)
+	EvidenceOut, err := DecodeAndValidateEvidenceFromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
 	pk := pubKeyFromJWK(t, testECKeyA)
@@ -84,9 +80,7 @@ b4016b312cc90fa0d629909eda28ed28013dfc71d8d33271
 `
 	cwt := mustHexDecode(t, tfmP2Sign1)
 
-	var e Evidence
-
-	err := e.FromCOSE(cwt)
+	e, err := DecodeAndValidateEvidenceFromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
 	pk := pubKeyFromJWK(t, testTFMECKey)
@@ -119,9 +113,7 @@ e7f48a5eead228c5
 `
 	cwt := mustHexDecode(t, tfmP1Sign1)
 
-	var e Evidence
-
-	err := e.FromCOSE(cwt)
+	e, err := DecodeAndValidateEvidenceFromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
 	pk := pubKeyFromJWK(t, testTFMECKey)
@@ -133,7 +125,7 @@ e7f48a5eead228c5
 func TestEvidence_FromCOSE_cwt_is_not_cose_sign1(t *testing.T) {
 	e := Evidence{}
 
-	err := e.FromCOSE([]byte{0x00})
+	err := e.UnmarshalCOSE([]byte{0x00})
 
 	assert.EqualError(t, err, "failed CBOR decoding for CWT: cbor: invalid COSE_Sign1_Tagged object")
 }
@@ -145,7 +137,7 @@ func TestEvidence_FromCOSE_empty_message(t *testing.T) {
 
 	e := Evidence{}
 
-	err := e.FromCOSE(tv)
+	err := e.UnmarshalCOSE(tv)
 
 	assert.EqualError(t, err, "failed CBOR decoding for CWT: unexpected EOF")
 }
@@ -158,7 +150,7 @@ func TestEvidence_FromCOSE_empty_claims(t *testing.T) {
 
 	e := Evidence{}
 
-	err := e.FromCOSE(tv)
+	err := e.UnmarshalCOSE(tv)
 
 	expectedErr := `failed CBOR decoding of PSA claims: EOF`
 
@@ -173,12 +165,9 @@ func TestEvidence_FromCOSE_bad_claims_unknown_profile(t *testing.T) {
 		0x6d, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x73, 0x61, 0x2f, 0x33, 0x2e,
 		0x30, 0x2e, 0x30, 0x44, 0xde, 0xad, 0xbe, 0xef,
 	}
-
-	e := Evidence{}
-
-	err := e.FromCOSE(tv)
-
 	expectedErr := `failed CBOR decoding of PSA claims: unknown profile: "http://arm.com/psa/3.0.0"`
+
+	_, err := DecodeAndValidateEvidenceFromCOSE(tv)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -212,7 +201,7 @@ func TestEvidence_FromUnvalidatedCOSE(t *testing.T) {
 
 	e := Evidence{}
 	for _, tv := range testVectors {
-		err := e.FromUnvalidatedCOSE(tv.data)
+		err := e.UnmarshalCOSE(tv.data)
 		if tv.expectedErr == "" {
 			assert.NoError(t, err)
 		} else {
@@ -292,14 +281,12 @@ func TestEvidence_sign_and_verify_key_mismatch(t *testing.T) {
 	err := EvidenceIn.SetClaims(mustBuildValidP2Claims(t, true))
 	assert.NoError(t, err)
 
-	cwt, err := EvidenceIn.Sign(tokenSigner)
+	cwt, err := EvidenceIn.ValidateAndSign(tokenSigner)
 	assert.NoError(t, err, "signing failed")
 
 	fmt.Printf("PSA evidence (profile 2): %x\n", cwt)
 
-	var EvidenceOut Evidence
-
-	err = EvidenceOut.FromCOSE(cwt)
+	EvidenceOut, err := DecodeAndValidateEvidenceFromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
 	pk := pubKeyFromJWK(t, testTFMECKey)
@@ -315,14 +302,12 @@ func TestEvidence_sign_and_verify_alg_mismatch(t *testing.T) {
 	err := EvidenceIn.SetClaims(mustBuildValidP2Claims(t, true))
 	assert.NoError(t, err)
 
-	cwt, err := EvidenceIn.Sign(tokenSigner)
+	cwt, err := EvidenceIn.ValidateAndSign(tokenSigner)
 	assert.NoError(t, err, "signing failed")
 
 	fmt.Printf("PSA evidence (profile 2): %x\n", cwt)
 
-	var EvidenceOut Evidence
-
-	err = EvidenceOut.FromCOSE(cwt)
+	EvidenceOut, err := DecodeAndValidateEvidenceFromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
 	var pk crypto.PublicKey
@@ -335,21 +320,19 @@ func TestEvidence_SignUnvalidated(t *testing.T) {
 	tokenSigner := signerFromJWK(t, testECKeyA)
 
 	buf := mustHexDecode(t, testEncodedP2ClaimsMissingMandatoryNonce)
-	v, err := DecodeUnvalidatedClaims(buf)
+	v, err := DecodeClaimsFromCBOR(buf)
 	require.NoError(t, err)
 
 	var EvidenceIn Evidence
 
 	EvidenceIn.Claims = v
 
-	cwt, err := EvidenceIn.SignUnvalidated(tokenSigner)
+	cwt, err := EvidenceIn.Sign(tokenSigner)
 	assert.NoError(t, err, "signing failed")
 
 	fmt.Printf("PSA evidence (profile 2): %x\n", cwt)
 
-	var EvidenceOut Evidence
-
-	err = EvidenceOut.FromUnvalidatedCOSE(cwt)
+	EvidenceOut, err := DecodeEvidenceFromCOSE(cwt)
 	assert.NoError(t, err, "Sign1Message decoding failed")
 
 	pk := pubKeyFromJWK(t, testTFMECKey)

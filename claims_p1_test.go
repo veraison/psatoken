@@ -4,6 +4,7 @@
 package psatoken
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -93,20 +94,18 @@ func Test_P1Claims_Validate_mandatory_only_claims_and_no_swmeasurements(t *testi
 
 func Test_P1Claims_ToCBOR_invalid(t *testing.T) {
 	c := newP1Claims(false)
+	expectedErr := `validating security lifecycle: missing mandatory claim`
 
-	expectedErr := `validation of PSA claims failed: validating security lifecycle: missing mandatory claim`
-
-	_, err := c.ToCBOR()
+	_, err := ValidateAndEncodeClaimsToCBOR(c)
 
 	assert.EqualError(t, err, expectedErr)
 }
 
 func Test_P1Claims_ToCBOR_all_claims_and_no_swmeasurements(t *testing.T) {
 	c := mustBuildValidP1Claims(t, true, true)
-
 	expected := mustHexDecode(t, testEncodedP1ClaimsAllNoSwMeasurements)
 
-	actual, err := c.ToCBOR()
+	actual, err := ValidateAndEncodeClaimsToCBOR(c)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
@@ -114,10 +113,9 @@ func Test_P1Claims_ToCBOR_all_claims_and_no_swmeasurements(t *testing.T) {
 
 func Test_P1Claims_ToCBOR_all_claims(t *testing.T) {
 	c := mustBuildValidP1Claims(t, true, false)
-
 	expected := mustHexDecode(t, testEncodedP1ClaimsAll)
 
-	actual, err := c.ToCBOR()
+	actual, err := ValidateAndEncodeClaimsToCBOR(c)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
@@ -125,10 +123,9 @@ func Test_P1Claims_ToCBOR_all_claims(t *testing.T) {
 
 func Test_P1Claims_ToCBOR_mandatory_only_claims(t *testing.T) {
 	c := mustBuildValidP1Claims(t, false, false)
-
 	expected := mustHexDecode(t, testEncodedP1ClaimsMandatoryOnly)
 
-	actual, err := c.ToCBOR()
+	actual, err := ValidateAndEncodeClaimsToCBOR(c)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
@@ -136,10 +133,9 @@ func Test_P1Claims_ToCBOR_mandatory_only_claims(t *testing.T) {
 
 func Test_P1Claims_ToCBOR_mandatory_only_claims_and_no_swmeasurements(t *testing.T) {
 	c := mustBuildValidP1Claims(t, false, true)
-
 	expected := mustHexDecode(t, testEncodedP1ClaimsMandatoryOnlyNoSwMeasurements)
 
-	actual, err := c.ToCBOR()
+	actual, err := ValidateAndEncodeClaimsToCBOR(c)
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
@@ -147,24 +143,18 @@ func Test_P1Claims_ToCBOR_mandatory_only_claims_and_no_swmeasurements(t *testing
 
 func Test_P1Claims_FromCBOR_bad_input(t *testing.T) {
 	buf := mustHexDecode(t, testNotCBOR)
+	expectedErr := "unexpected EOF"
 
-	expectedErr := "CBOR decoding of PSA claims failed: unexpected EOF"
-
-	c := newP1Claims(false)
-
-	err := c.FromCBOR(buf)
+	_, err := DecodeAndValidateClaimsFromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
 }
 
 func Test_P1Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedP1ClaimsMissingMandatoryNonce)
+	expectedErr := "validating nonce: missing mandatory claim"
 
-	expectedErr := "validation of PSA claims failed: validating nonce: missing mandatory claim"
-
-	c := newP1Claims(false)
-
-	err := c.FromCBOR(buf)
+	_, err := DecodeAndValidateClaimsFromCBOR(buf)
 
 	assert.EqualError(t, err, expectedErr)
 }
@@ -172,9 +162,7 @@ func Test_P1Claims_FromCBOR_missing_mandatory_claim(t *testing.T) {
 func Test_P1Claims_FromCBOR_ok_mandatory_only(t *testing.T) {
 	buf := mustHexDecode(t, testEncodedP1ClaimsMandatoryOnly)
 
-	c := newP1Claims(false)
-
-	err := c.FromCBOR(buf)
+	c, err := DecodeAndValidateClaimsFromCBOR(buf)
 	assert.NoError(t, err)
 
 	// even if it's not physically present the profile indication is always returned
@@ -250,9 +238,13 @@ func Test_P1Claims_FromJSON_positives(t *testing.T) {
 		buf, err := os.ReadFile(fn)
 		require.NoError(t, err)
 
-		claimsSet := newP1Claims(false)
+		claims := newP1Claims(false)
 
-		err = claimsSet.FromJSON(buf)
+		err = json.Unmarshal(buf, claims)
+		require.NoError(t, err)
+
+		err = claims.Validate()
+
 		assert.NoError(t, err, "test vector %d failed", i)
 	}
 }
@@ -292,21 +284,22 @@ func Test_P1Claims_FromJSON_negatives(t *testing.T) {
 		buf, err := os.ReadFile(fn)
 		require.NoError(t, err)
 
-		var claimsSet P1Claims
+		claims := newP1Claims(false)
 
-		err = claimsSet.FromJSON(buf)
+		err = json.Unmarshal(buf, claims)
+		require.NoError(t, err)
+
+		err = claims.Validate()
+
 		assert.Error(t, err, "test vector %d failed", i)
 	}
 }
 
 func TestP1Claims_FromJSON_invalid_json(t *testing.T) {
-	tv := testNotJSON
+	expectedErr := `unexpected end of JSON input`
 
-	expectedErr := `JSON decoding of PSA claims failed: unexpected end of JSON input`
+	_, err := DecodeAndValidateClaimsFromJSON(testNotJSON)
 
-	c := newP1Claims(false)
-
-	err := c.FromJSON(tv)
 	assert.EqualError(t, err, expectedErr)
 }
 
@@ -331,7 +324,7 @@ func Test_P1Claims_ToJSON_ok(t *testing.T) {
 	"psa-verification-service-indicator": "https://veraison.example/v1/challenge-response"
 }`
 
-	actual, err := c.ToJSON()
+	actual, err := ValidateAndEncodeClaimsToJSON(c)
 	assert.NoError(t, err)
 	assert.JSONEq(t, expected, string(actual))
 }

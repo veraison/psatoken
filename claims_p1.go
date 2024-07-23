@@ -172,24 +172,14 @@ func (c *P1Claims) SetVSI(v string) error {
 
 // Codecs
 
-func (c *P1Claims) FromCBOR(buf []byte) error {
-	err := c.FromUnvalidatedCBOR(buf)
-	if err != nil {
-		return err
-	}
+// this type alias is used to prevent infinite recursion during marshaling.
+type p1Claims P1Claims
 
-	err = c.Validate()
-	if err != nil {
-		return fmt.Errorf("validation of PSA claims failed: %w", err)
-	}
-
-	return nil
-}
-
-func (c *P1Claims) FromUnvalidatedCBOR(buf []byte) error {
+func (c *P1Claims) UnmarshalCBOR(buf []byte) error {
 	c.Profile = nil // clear profile to make sure we take it from buf
 
-	err := dm.Unmarshal(buf, c)
+	// cast prevents the decoder invoking this method again
+	err := dm.Unmarshal(buf, (*p1Claims)(c))
 	if err != nil {
 		return fmt.Errorf("CBOR decoding of PSA claims failed: %w", err)
 	}
@@ -197,51 +187,20 @@ func (c *P1Claims) FromUnvalidatedCBOR(buf []byte) error {
 	return nil
 }
 
-func (c P1Claims) ToCBOR() ([]byte, error) { //nolint:gocritic
-	err := c.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
-	}
-
-	return c.ToUnvalidatedCBOR()
-}
-
-func (c P1Claims) ToUnvalidatedCBOR() ([]byte, error) { //nolint:gocritic
-	var scs ISwComponents
+func (c P1Claims) MarshalCBOR() ([]byte, error) { //nolint:gocritic
 	if c.SwComponents != nil && c.SwComponents.IsEmpty() {
-		scs = c.SwComponents
 		c.SwComponents = nil
 	}
 
-	buf, err := em.Marshal(&c)
-	if scs != nil {
-		c.SwComponents = scs
-	}
-	if err != nil {
-		return nil, fmt.Errorf("CBOR encoding of PSA claims failed: %w", err)
-	}
-
-	return buf, nil
+	// cast prevents encoder from invoking this method again
+	return em.Marshal((*p1Claims)(&c))
 }
 
-func (c *P1Claims) FromJSON(buf []byte) error {
-	err := c.FromUnvalidatedJSON(buf)
-	if err != nil {
-		return err
-	}
-
-	err = c.Validate()
-	if err != nil {
-		return fmt.Errorf("validation of PSA claims failed: %w", err)
-	}
-
-	return nil
-}
-
-func (c *P1Claims) FromUnvalidatedJSON(buf []byte) error {
+func (c *P1Claims) UnmarshalJSON(buf []byte) error {
 	c.Profile = nil // clear profile to make sure we take it from buf
 
-	err := json.Unmarshal(buf, c)
+	// cast prevents the decoder invoking this method again
+	err := json.Unmarshal(buf, (*p1Claims)(c))
 	if err != nil {
 		return fmt.Errorf("JSON decoding of PSA claims failed: %w", err)
 	}
@@ -249,31 +208,13 @@ func (c *P1Claims) FromUnvalidatedJSON(buf []byte) error {
 	return nil
 }
 
-func (c P1Claims) ToJSON() ([]byte, error) { //nolint:gocritic
-	err := c.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
-	}
-
-	return c.ToUnvalidatedJSON()
-}
-
-func (c P1Claims) ToUnvalidatedJSON() ([]byte, error) { //nolint:gocritic
-	var scs ISwComponents
+func (c P1Claims) MarshalJSON() ([]byte, error) { //nolint:gocritic
 	if c.SwComponents != nil && c.SwComponents.IsEmpty() {
-		scs = c.SwComponents
 		c.SwComponents = nil
 	}
 
-	buf, err := json.Marshal(&c)
-	if scs != nil {
-		c.SwComponents = scs
-	}
-	if err != nil {
-		return nil, fmt.Errorf("JSON encoding of PSA claims failed: %w", err)
-	}
-
-	return buf, nil
+	// cast prevents encoder from invoking this method again
+	return json.Marshal((*p1Claims)(&c))
 }
 
 // Getters return a validated value or an error

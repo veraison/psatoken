@@ -84,52 +84,20 @@ func (o *ExampleClaims) Validate() error {
 // custom encoding functions, which means implementing the eight marshaling
 // methods defined by IClaims.
 
-func (o ExampleClaims) ToUnvalidatedCBOR() ([]byte, error) { //nolint:gocritic
+func (o ExampleClaims) MarshalCBOR() ([]byte, error) { //nolint:gocritic
 	return encoding.SerializeStructToCBOR(em, &o)
 }
 
-func (o *ExampleClaims) FromUnvalidatedCBOR(data []byte) error {
+func (o *ExampleClaims) UnmarshalCBOR(data []byte) error {
 	return encoding.PopulateStructFromCBOR(dm, data, o)
 }
 
-func (o ExampleClaims) ToUnvalidatedJSON() ([]byte, error) { //nolint:gocritic
+func (o ExampleClaims) MarshalJSON() ([]byte, error) { //nolint:gocritic
 	return encoding.SerializeStructToJSON(&o)
 
 }
-func (o *ExampleClaims) FromUnvalidatedJSON(data []byte) error {
+func (o *ExampleClaims) UnmarshalJSON(data []byte) error {
 	return encoding.PopulateStructFromJSON(data, o)
-}
-
-func (o ExampleClaims) ToCBOR() ([]byte, error) { //nolint:gocritic
-	if err := o.Validate(); err != nil {
-		return nil, err
-	}
-
-	return o.ToUnvalidatedCBOR()
-}
-
-func (o *ExampleClaims) FromCBOR(data []byte) error {
-	if err := o.FromUnvalidatedCBOR(data); err != nil {
-		return err
-	}
-
-	return o.Validate()
-}
-
-func (o ExampleClaims) ToJSON() ([]byte, error) { //nolint:gocritic
-	if err := o.Validate(); err != nil {
-		return nil, err
-	}
-
-	return o.ToUnvalidatedJSON()
-}
-
-func (o *ExampleClaims) FromJSON(data []byte) error {
-	if err := o.FromUnvalidatedJSON(data); err != nil {
-		return err
-	}
-
-	return o.Validate()
 }
 
 // Name of the profile associated with ExampleClaims
@@ -208,7 +176,7 @@ func Example_unmarashal() {
 	}
 	`)
 
-	claims, err := DecodeClaimsFromJSON(input)
+	claims, err := DecodeAndValidateClaimsFromJSON(input)
 	if err != nil {
 		log.Fatalf("could not decode claims: %v", err)
 	}
@@ -298,7 +266,7 @@ func Example_marshal() {
 		log.Fatalf("could not set timestamp: %v", err)
 	}
 
-	out, err := exampleClaims.ToJSON()
+	out, err := exampleClaims.MarshalJSON()
 	if err != nil {
 		log.Fatalf("could not marshal claims: %v", err)
 	}

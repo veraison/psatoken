@@ -167,80 +167,19 @@ func (c *P2Claims) SetVSI(v string) error {
 
 // Codecs
 
-func (c *P2Claims) FromCBOR(buf []byte) error {
-	err := c.FromUnvalidatedCBOR(buf)
-	if err != nil {
-		return err
-	}
+// this type alias is used to prevent infinite recursion during marshaling.
+type p2Claims P2Claims
 
-	err = c.Validate()
-	if err != nil {
-		return fmt.Errorf("validation of PSA claims failed: %w", err)
-	}
-
-	return nil
-}
-
-func (c *P2Claims) FromUnvalidatedCBOR(buf []byte) error {
+func (c *P2Claims) UnmarshalCBOR(buf []byte) error {
 	c.Profile = nil // clear profile to make sure we take it from buf
 
-	err := dm.Unmarshal(buf, c)
-	if err != nil {
-		return fmt.Errorf("CBOR decoding of PSA claims failed: %w", err)
-	}
-
-	return nil
+	return dm.Unmarshal(buf, (*p2Claims)(c))
 }
 
-func (c P2Claims) ToCBOR() ([]byte, error) { //nolint:gocritic
-	err := c.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
-	}
-
-	return c.ToUnvalidatedCBOR()
-}
-
-func (c P2Claims) ToUnvalidatedCBOR() ([]byte, error) { //nolint:gocritic
-	return em.Marshal(&c)
-}
-
-func (c *P2Claims) FromJSON(buf []byte) error {
-	err := c.FromUnvalidatedJSON(buf)
-	if err != nil {
-		return err
-	}
-
-	err = c.Validate()
-	if err != nil {
-		return fmt.Errorf("validation of PSA claims failed: %w", err)
-	}
-
-	return nil
-}
-
-func (c *P2Claims) FromUnvalidatedJSON(buf []byte) error {
+func (c *P2Claims) UnmarshalJSON(buf []byte) error {
 	c.Profile = nil // clear profile to make sure we take it from buf
 
-	err := json.Unmarshal(buf, c)
-	if err != nil {
-		return fmt.Errorf("JSON decoding of PSA claims failed: %w", err)
-	}
-
-	return nil
-}
-
-func (c P2Claims) ToJSON() ([]byte, error) { //nolint:gocritic
-	err := c.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("validation of PSA claims failed: %w", err)
-	}
-
-	return c.ToUnvalidatedJSON()
-}
-
-func (c P2Claims) ToUnvalidatedJSON() ([]byte, error) { //nolint:gocritic
-	return json.Marshal(&c)
+	return json.Unmarshal(buf, (*p2Claims)(c))
 }
 
 // Getters return a validated value or an error
