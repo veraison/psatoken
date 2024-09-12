@@ -184,3 +184,8 @@ func (e *Evidence) doSign(signer cose.Signer) ([]byte, error) {
 
 	return wrap, nil
 }
+
+// MarshalJSON encodes the PSA claims-set to JSON
+func (e *Evidence) MarshalJSON() ([]byte, error) {
+	return EncodeClaimsToJSON(e.Claims)
+}
