@@ -313,7 +313,7 @@ func TestEvidence_sign_and_verify_alg_mismatch(t *testing.T) {
 	var pk crypto.PublicKey
 
 	err = EvidenceOut.Verify(pk)
-	assert.EqualError(t, err, "unable to instantiate verifier: ES256: algorithm mismatch")
+	assert.EqualError(t, err, "unable to instantiate verifier: ES256: invalid public key")
 }
 
 func TestEvidence_SignUnvalidated(t *testing.T) {
