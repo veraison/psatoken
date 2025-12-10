@@ -4,6 +4,8 @@
 package psatoken
 
 import (
+	"fmt"
+
 	"github.com/veraison/eat"
 	"github.com/veraison/psatoken/encoding"
 )
@@ -11,6 +13,9 @@ import (
 type RFC9783Claims struct {
 	// embed P2Claims to inherit existing implementation
 	P2Claims
+
+	// Override BootSeed to use different CBOR key as per RFC 9783 (268 vs 2397)
+	BootSeed *[]byte `cbor:"268,keyasint,omitempty" json:"psa-boot-seed,omitempty"`
 }
 
 func (o *RFC9783Claims) Validate() error {
@@ -19,11 +24,46 @@ func (o *RFC9783Claims) Validate() error {
 		return err
 	}
 
+	// additional validation: ensure bootseed is between 8 and 32 bytes if present
+	if _, err := o.GetBootSeed(); err != nil && err != ErrOptionalClaimMissing {
+		return err
+	}
+
 	return nil
 }
 
+func (o *RFC9783Claims) SetBootSeed(v []byte) error {
+	l := len(v)
+	if l < 8 || l > 32 {
+		return fmt.Errorf(
+			"%w: invalid length %d (MUST be between 8 and 32 bytes)",
+			ErrWrongSyntax, l,
+		)
+	}
+
+	o.BootSeed = &v
+
+	return nil
+}
+
+func (o *RFC9783Claims) GetBootSeed() ([]byte, error) {
+	if o.BootSeed == nil {
+		return nil, ErrOptionalClaimMissing
+	}
+
+	l := len(*o.BootSeed)
+	if l < 8 || l > 32 {
+		return nil, fmt.Errorf(
+			"%w: invalid length %d (MUST be between 8 and 32 bytes)",
+			ErrWrongSyntax, l,
+		)
+	}
+
+	return *o.BootSeed, nil
+}
+
 // To ensure embedding is handled correctly during marshaling, we need to use
-// custom encoding functions, which means implementing the eight marshaling
+// custom encoding functions, which means implementing the four marshaling
 // methods defined by IClaims.
 
 func (o RFC9783Claims) MarshalCBOR() ([]byte, error) { //nolint:gocritic
@@ -38,6 +78,7 @@ func (o RFC9783Claims) MarshalJSON() ([]byte, error) { //nolint:gocritic
 	return encoding.SerializeStructToJSON(&o)
 
 }
+
 func (o *RFC9783Claims) UnmarshalJSON(data []byte) error {
 	return encoding.PopulateStructFromJSON(data, o)
 }
@@ -46,7 +87,7 @@ func (o *RFC9783Claims) UnmarshalJSON(data []byte) error {
 const RFC9783ProfileName = "tag:psacertified.org,2023:psa#tfm"
 
 // factory function for RFC9783Claims
-func NewRFC9783Claims() IClaims {
+func NewRFC9783Claims() *RFC9783Claims {
 	p := eat.Profile{}
 	if err := p.Set(RFC9783ProfileName); err != nil {
 		// should never get here as using known good constant as input
