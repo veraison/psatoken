@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2022 Contributors to the Veraison project.
+# Copyright 2022-2025 Contributors to the Veraison project.
 # SPDX-License-Identifier: Apache-2.0
 
 set -eu
@@ -17,6 +17,7 @@ DIAG_FILES="${DIAG_FILES} P2ClaimsMissingMandatoryNonce"
 DIAG_FILES="${DIAG_FILES} P2ClaimsInvalidMultiNonce"
 DIAG_FILES="${DIAG_FILES} P1ClaimsTFM"
 DIAG_FILES="${DIAG_FILES} P2ClaimsTFM"
+DIAG_FILES="${DIAG_FILES} RFC9783ClaimsAll"
 
 TV_DOT_GO=${TV_DOT_GO?must be set in the environment.}
 

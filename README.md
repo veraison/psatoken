@@ -4,6 +4,7 @@ This is a compliant implementation of ~~three~~two specifications:
 
 * [draft-tschofenig-rats-psa-token-07](https://datatracker.ietf.org/doc/html/draft-tschofenig-rats-psa-token-07) (`PSA_IOT_PROFILE_1`), and 
 * [draft-tschofenig-rats-psa-token-09](https://datatracker.ietf.org/doc/html/draft-tschofenig-rats-psa-token-09) (`http://arm.com/psa/2.0.0`)
+* [RFC9783](https://datatracker.ietf.org/doc/html/RFC9783) (`tag:psacertified.org,2023:psa#tfm`)
 * ~~Realm Management Monitor Specificiation [RMM Spec](https://developer.arm.com/documentation/den0137/latest)~~
 
 > [!Note]
@@ -22,7 +23,7 @@ The package exposes the following functionalities:
 
 # Implementing new profiles
 
-It is possible to support PSA-derived profiles other than profiles 1 and 2
+It is possible to support PSA-derived profiles other than profiles 1, 2 and tfm
 implemented here. To do this you need to provide an implementation of `IClaims`
 and an implementation of `IProfile` that associates your `IClaims`
 implementation with an `eat.Profile` value, and then register the `IProfile`
