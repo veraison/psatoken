@@ -339,3 +339,54 @@ func TestEvidence_SignUnvalidated(t *testing.T) {
 	err = EvidenceOut.Verify(pk)
 	assert.EqualError(t, err, "signature verification failed: verification error")
 }
+
+// TestIssue18AlgorithmInference tests the fix for issue #18
+// This test verifies that the algorithm inference functionality works correctly
+// when the algorithm is not present in the protected headers (e.g., from compile_token)
+func TestIssue18AlgorithmInference(t *testing.T) {
+	// Test the algorithm inference function with different key types
+	testCases := []struct {
+		name          string
+		keyData       string
+		expectedAlg   string
+	}{
+		{
+			name:        "ECDSA P-256 key",
+			keyData:     testECKeyA,
+			expectedAlg: "ES256",
+		},
+		{
+			name:        "TFM ECDSA key", 
+			keyData:     testTFMECKey,
+			expectedAlg: "ES256",
+		},
+	}
+	
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pk := pubKeyFromJWK(t, tc.keyData)
+			
+			inferredAlg, err := InferAlgorithmFromPublicKey(pk)
+			assert.NoError(t, err, "Should be able to infer algorithm")
+			assert.Equal(t, tc.expectedAlg, inferredAlg.String(), "Should infer correct algorithm")
+		})
+	}
+	
+	// Test that verification still works normally (regression test)
+	tokenSigner := signerFromJWK(t, testECKeyA)
+	claims := mustBuildValidP2Claims(t, false)
+	
+	var evidence Evidence
+	err := evidence.SetClaims(claims)
+	require.NoError(t, err)
+	
+	cwt, err := evidence.ValidateAndSign(tokenSigner)
+	require.NoError(t, err)
+	
+	evidenceOut, err := DecodeAndValidateEvidenceFromCOSE(cwt)
+	require.NoError(t, err)
+	
+	pk := pubKeyFromJWK(t, testECKeyA)
+	err = evidenceOut.Verify(pk)
+	assert.NoError(t, err, "Normal verification should still work after the fix")
+}

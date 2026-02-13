@@ -5,7 +5,10 @@ package psatoken
 
 import (
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/rsa"
 	_ "crypto/sha256" // used hash algorithms need to be imported explicitly
 	"errors"
 	"fmt"
@@ -147,7 +150,17 @@ func (e *Evidence) Verify(pk crypto.PublicKey) error {
 
 	algo, err := protected.Algorithm()
 	if err != nil {
-		return fmt.Errorf("unable to get verification algorithm: %w", err)
+		// If algorithm is not found in protected headers, this might be a token
+		// created by compile_token or other tools that don't set the algorithm
+		// in protected headers. In this case, we should try to infer the algorithm
+		// from the public key type or use a default algorithm.
+		
+		// Try to infer algorithm from public key type
+		inferredAlgo, inferErr := inferAlgorithmFromPublicKey(pk)
+		if inferErr != nil {
+			return fmt.Errorf("unable to get verification algorithm: %w (and failed to infer: %v)", err, inferErr)
+		}
+		algo = inferredAlgo
 	}
 
 	verifier, err := cose.NewVerifier(algo, pk)
@@ -183,6 +196,40 @@ func (e *Evidence) doSign(signer cose.Signer) ([]byte, error) {
 	}
 
 	return wrap, nil
+}
+
+// InferAlgorithmFromPublicKey attempts to infer the COSE algorithm from the public key type.
+// This is used as a fallback when the algorithm is not present in the protected headers.
+// This function is exported for testing purposes.
+func InferAlgorithmFromPublicKey(pk crypto.PublicKey) (cose.Algorithm, error) {
+	return inferAlgorithmFromPublicKey(pk)
+}
+
+// inferAlgorithmFromPublicKey is the internal implementation of algorithm inference.
+func inferAlgorithmFromPublicKey(pk crypto.PublicKey) (cose.Algorithm, error) {
+	switch key := pk.(type) {
+	case *ecdsa.PublicKey:
+		// For ECDSA keys, try to determine the curve and map to appropriate COSE algorithm
+		switch key.Curve.Params().BitSize {
+		case 256:
+			return cose.AlgorithmES256, nil
+		case 384:
+			return cose.AlgorithmES384, nil
+		case 521:
+			return cose.AlgorithmES512, nil
+		default:
+			return cose.AlgorithmES256, nil // Default to ES256 for unknown curves
+		}
+	case ed25519.PublicKey:
+		return cose.AlgorithmEdDSA, nil
+	case *rsa.PublicKey:
+		// Default to PS256 for RSA keys
+		return cose.AlgorithmPS256, nil
+	default:
+		// If we can't determine the key type, default to ES256 as it's most common
+		// for PSA tokens
+		return cose.AlgorithmES256, nil
+	}
 }
 
 // MarshalJSON encodes the PSA claims-set to JSON
