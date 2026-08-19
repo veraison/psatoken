@@ -1,6 +1,6 @@
 module github.com/veraison/psatoken
 
-go 1.21
+go 1.25.0
 
 require (
 	github.com/fxamacker/cbor/v2 v2.5.0
@@ -23,7 +23,7 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f // indirect
+	golang.org/x/crypto v0.52.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
