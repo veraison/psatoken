@@ -8,9 +8,8 @@ GOPKG += github.com/veraison/psatoken/encoding
 
 GOLINT ?= golangci-lint
 
-ifeq ($(MAKECMDGOALS),lint)
-GOLINT_ARGS ?= run --timeout=3m -E dupl -E gocritic -E gosimple -E lll -E prealloc
-endif
+# linters and their settings come from .golangci.yml
+GOLINT_ARGS ?= run
 
 .PHONY: lint
 lint: ; $(GOLINT) $(GOLINT_ARGS)
@@ -23,7 +22,7 @@ else
   endif
 endif
 
-COVER_THRESHOLD := $(shell grep '^name: cover' .github/workflows/ci-go-cover.yml | cut -c13-)
+COVER_THRESHOLD := $(shell sed -n "s/^ *min-coverage: '\(.*\)'/≥\1%/p" .github/workflows/ci.yml)
 
 .PHONY: test test-cover
 test test-cover: ; go test $(GOTEST_ARGS)
@@ -47,6 +46,6 @@ help:
 	@echo "  * test:       run unit tests for $(GOPKG)"
 	@echo "  * test-cover: run unit tests and measure coverage for $(GOPKG)"
 	@echo "  * licenses:   check licenses of dependent packages"
-	@echo "  * lint:       lint sources using default configuration"
+	@echo "  * lint:       lint sources using .golangci.yml"
 	@echo "  * presubmit:  check you are ready to push your local branch to remote"
 	@echo "  * help:       print this menu"
