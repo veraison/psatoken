@@ -42,7 +42,8 @@ func Test_PopulateStructFromJSON(t *testing.T) {
 	assert.EqualError(t, err, `missing mandatory field "FieldTwo" ("field-two")`)
 
 	err = PopulateStructFromJSON([]byte("7"), &v)
-	assert.EqualError(t, err, `json: cannot unmarshal number into Go value of type map[string]json.RawMessage`)
+	// In newer go versions json.RawMessage is an alias to jsontext.Value, so only assert up until the json part
+	assert.ErrorContains(t, err, `json: cannot unmarshal number into Go value of type map[string]json`)
 
 	type CompositeStruct struct {
 		FieldThree string `json:"field-three"`

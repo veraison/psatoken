@@ -158,14 +158,14 @@ func Example_unmarashal() {
 	  "eat-profile": "http://example.com/psa",
 	  "psa-client-id": 1,
 	  "psa-security-lifecycle": 12288,
-	  "psa-implementation-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
-	  "psa-boot-seed": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
+	  "psa-implementation-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+	  "psa-boot-seed": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
 	  "psa-hwver": "1234567890123",
 	  "psa-software-components": [
 	    {
 	      "measurement-type": "BL",
-	      "measurement-value": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=",
-	      "signer-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA="
+	      "measurement-value": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+	      "signer-id": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA"
 	    }
 	  ],
 	  "psa-nonce": "AQIDBAUGBwgJCgsMDQ4PEAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8g",
@@ -207,7 +207,7 @@ func Example_marshal() {
 	// note: for the sake of example, these bytes will be used in multiple
 	// places when constructing the claims. In reality, you would, of
 	// course, use appropriate data for each claim.
-	exampleBytes := []byte{
+	exampleBytes := eat.BinaryData{
 		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
 		0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14,
 		0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e,
@@ -274,5 +274,5 @@ func Example_marshal() {
 	fmt.Printf("marshaled claims: %s", string(out))
 
 	// output:
-	// marshaled claims: {"timestamp":1721138454,"eat-profile":"http://example.com/psa","psa-client-id":1,"psa-security-lifecycle":12288,"psa-implementation-id":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=","psa-software-components":[{"measurement-value":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA=","signer-id":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA="}],"psa-nonce":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyABAgMEBQYHCAkKCwwNDg8Q","psa-instance-id":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAh"}
+	// marshaled claims: {"timestamp":1721138454,"eat-profile":"http://example.com/psa","psa-client-id":1,"psa-security-lifecycle":12288,"psa-implementation-id":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA","psa-software-components":[{"measurement-value":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA","signer-id":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA"}],"psa-nonce":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyABAgMEBQYHCAkKCwwNDg8Q","psa-instance-id":"AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAh"}
 }

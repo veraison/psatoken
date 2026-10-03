@@ -310,16 +310,16 @@ func Test_P1Claims_ToJSON_ok(t *testing.T) {
 	"psa-profile": "PSA_IOT_PROFILE_1",
 	"psa-client-id": 2147483647,
 	"psa-security-lifecycle": 12288,
-	"psa-implementation-id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-	"psa-boot-seed": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+	"psa-implementation-id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+	"psa-boot-seed": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
 	"psa-hwver": "1234567890123",
 	"psa-software-components": [
 		{
-			"measurement-value": "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=",
-			"signer-id": "BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ="
+			"measurement-value": "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM",
+			"signer-id": "BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ"
 		}
 	],
-	"psa-nonce": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",
+	"psa-nonce": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE",
 	"psa-instance-id": "AQICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC",
 	"psa-verification-service-indicator": "https://veraison.example/v1/challenge-response"
 }`

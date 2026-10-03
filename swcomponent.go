@@ -3,13 +3,15 @@
 
 package psatoken
 
+import "github.com/veraison/eat"
+
 // SwComponent is the internal representation of a Software Component
 type SwComponent struct {
-	MeasurementType  *string `cbor:"1,keyasint,omitempty" json:"measurement-type,omitempty"`
-	MeasurementValue *[]byte `cbor:"2,keyasint" json:"measurement-value"`
-	Version          *string `cbor:"4,keyasint,omitempty" json:"version,omitempty"`
-	SignerID         *[]byte `cbor:"5,keyasint" json:"signer-id"`
-	MeasurementDesc  *string `cbor:"6,keyasint,omitempty" json:"measurement-description,omitempty"`
+	MeasurementType  *string         `cbor:"1,keyasint,omitempty" json:"measurement-type,omitempty"`
+	MeasurementValue *eat.BinaryData `cbor:"2,keyasint" json:"measurement-value"`
+	Version          *string         `cbor:"4,keyasint,omitempty" json:"version,omitempty"`
+	SignerID         *eat.BinaryData `cbor:"5,keyasint" json:"signer-id"`
+	MeasurementDesc  *string         `cbor:"6,keyasint,omitempty" json:"measurement-description,omitempty"`
 }
 
 func (sc SwComponent) Validate() error {
@@ -74,7 +76,8 @@ func (sc *SwComponent) SetMeasurementValue(v []byte) error {
 		return err
 	}
 
-	sc.MeasurementValue = &v
+	b := eat.BinaryData(v)
+	sc.MeasurementValue = &b
 
 	return nil
 }
@@ -89,7 +92,8 @@ func (sc *SwComponent) SetSignerID(v []byte) error {
 		return err
 	}
 
-	sc.SignerID = &v
+	b := eat.BinaryData(v)
+	sc.SignerID = &b
 
 	return nil
 }

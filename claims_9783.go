@@ -15,7 +15,7 @@ type RFC9783Claims struct {
 	P2Claims
 
 	// Override BootSeed to use different CBOR key as per RFC 9783 (268 vs 2397)
-	BootSeed *[]byte `cbor:"268,keyasint,omitempty" json:"psa-boot-seed,omitempty"`
+	BootSeed *eat.BinaryData `cbor:"268,keyasint,omitempty" json:"psa-boot-seed,omitempty"`
 }
 
 func (o *RFC9783Claims) Validate() error {
@@ -41,7 +41,8 @@ func (o *RFC9783Claims) SetBootSeed(v []byte) error {
 		)
 	}
 
-	o.BootSeed = &v
+	b := eat.BinaryData(v)
+	o.BootSeed = &b
 
 	return nil
 }
