@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/veraison/eat"
 )
 
 func Test_SwComponent_setters(t *testing.T) {
@@ -21,7 +22,7 @@ func Test_SwComponent_setters(t *testing.T) {
 
 	err = sc.SetMeasurementValue(buf)
 	require.NoError(t, err)
-	assert.Equal(t, buf, *sc.MeasurementValue)
+	assert.Equal(t, eat.BinaryData(buf), *sc.MeasurementValue)
 
 	err = sc.SetMeasurementValue(badBuf)
 	assert.EqualError(t, err, "wrong syntax: length 2 (hash MUST be 32, 48 or 64 bytes)")
@@ -32,7 +33,7 @@ func Test_SwComponent_setters(t *testing.T) {
 
 	err = sc.SetSignerID(buf)
 	require.NoError(t, err)
-	assert.Equal(t, buf, *sc.SignerID)
+	assert.Equal(t, eat.BinaryData(buf), *sc.SignerID)
 
 	err = sc.SetSignerID(badBuf)
 	assert.EqualError(t, err, "wrong syntax: length 2 (hash MUST be 32, 48 or 64 bytes)")

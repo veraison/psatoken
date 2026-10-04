@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/fxamacker/cbor/v2"
 	"github.com/veraison/eat"
 )
 
@@ -27,16 +28,16 @@ func (o Profile2) GetClaims() IClaims {
 // P2Claims are associated with profile "http://arm.com/psa/2.0.0"
 // See https://datatracker.ietf.org/doc/html/draft-tschofenig-rats-psa-token-13
 type P2Claims struct {
-	Profile                *eat.Profile  `cbor:"265,keyasint" json:"eat-profile"`
-	ClientID               *int32        `cbor:"2394,keyasint" json:"psa-client-id"`
-	SecurityLifeCycle      *uint16       `cbor:"2395,keyasint" json:"psa-security-lifecycle"`
-	ImplID                 *[]byte       `cbor:"2396,keyasint" json:"psa-implementation-id"`
-	BootSeed               *[]byte       `cbor:"2397,keyasint,omitempty" json:"psa-boot-seed,omitempty"`
-	CertificationReference *string       `cbor:"2398,keyasint,omitempty" json:"psa-certification-reference,omitempty"`
-	SwComponents           ISwComponents `cbor:"2399,keyasint" json:"psa-software-components"`
-	Nonce                  *eat.Nonce    `cbor:"10,keyasint" json:"psa-nonce"`
-	InstID                 *eat.UEID     `cbor:"256,keyasint" json:"psa-instance-id"`
-	VSI                    *string       `cbor:"2400,keyasint,omitempty" json:"psa-verification-service-indicator,omitempty"`
+	Profile                *eat.Profile    `cbor:"265,keyasint" json:"eat-profile"`
+	ClientID               *int32          `cbor:"2394,keyasint" json:"psa-client-id"`
+	SecurityLifeCycle      *uint16         `cbor:"2395,keyasint" json:"psa-security-lifecycle"`
+	ImplID                 *eat.BinaryData `cbor:"2396,keyasint" json:"psa-implementation-id"`
+	BootSeed               *eat.BinaryData `cbor:"2397,keyasint,omitempty" json:"psa-boot-seed,omitempty"`
+	CertificationReference *string         `cbor:"2398,keyasint,omitempty" json:"psa-certification-reference,omitempty"`
+	SwComponents           ISwComponents   `cbor:"2399,keyasint" json:"psa-software-components"`
+	Nonce                  *eat.Nonce      `cbor:"10,keyasint" json:"psa-nonce"`
+	InstID                 *eat.UEID       `cbor:"256,keyasint" json:"psa-instance-id"`
+	VSI                    *string         `cbor:"2400,keyasint,omitempty" json:"psa-verification-service-indicator,omitempty"`
 
 	// CanonicalProfile contains the "correct" profile name associated with
 	// this IClaims implementation (e.g. "http://arm.com/psa/2.0.0" for
@@ -86,7 +87,8 @@ func (c *P2Claims) SetImplID(v []byte) error {
 		return err
 	}
 
-	c.ImplID = &v
+	b := eat.BinaryData(v)
+	c.ImplID = &b
 
 	return nil
 }
@@ -100,7 +102,8 @@ func (c *P2Claims) SetBootSeed(v []byte) error {
 		)
 	}
 
-	c.BootSeed = &v
+	b := eat.BinaryData(v)
+	c.BootSeed = &b
 
 	return nil
 }
@@ -132,13 +135,12 @@ func (c *P2Claims) SetNonce(v []byte) error {
 		return err
 	}
 
-	n := eat.Nonce{}
-
-	if err := n.Add(v); err != nil {
+	n, err := eat.NewNonceFromBytes(v)
+	if err != nil {
 		return err
 	}
 
-	c.Nonce = &n
+	c.Nonce = n
 
 	return nil
 }
@@ -148,9 +150,12 @@ func (c *P2Claims) SetInstID(v []byte) error {
 		return err
 	}
 
-	ueid := eat.UEID(v)
+	ueid, err := eat.UEIDFromBytes(v)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrWrongSyntax, err)
+	}
 
-	c.InstID = &ueid
+	c.InstID = ueid
 
 	return nil
 }
@@ -290,7 +295,7 @@ func (c P2Claims) GetNonce() ([]byte, error) { //nolint:gocritic
 		return nil, fmt.Errorf("%w: got %d nonces, want 1", ErrWrongSyntax, l)
 	}
 
-	n := v.GetI(0)
+	n := v.Get(0)
 	if err := ValidateNonce(n); err != nil {
 		return nil, err
 	}
@@ -305,11 +310,33 @@ func (c P2Claims) GetInstID() ([]byte, error) { //nolint:gocritic
 		return nil, ErrMandatoryClaimMissing
 	}
 
-	if err := ValidateInstID(*v); err != nil {
+	instID, err := ueidToBytes(v)
+	if err != nil {
 		return nil, err
 	}
 
-	return *v, nil
+	if err := ValidateInstID(instID); err != nil {
+		return nil, err
+	}
+
+	return instID, nil
+}
+
+// ueidToBytes extracts the raw bytes from an eat.UEID. eat.UEID does not
+// provide an accessor for its value, so round-trip through its CBOR encoding
+// (a plain bstr).
+func ueidToBytes(u *eat.UEID) ([]byte, error) {
+	data, err := u.MarshalCBOR()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrWrongSyntax, err)
+	}
+
+	var b []byte
+	if err := cbor.Unmarshal(data, &b); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrWrongSyntax, err)
+	}
+
+	return b, nil
 }
 
 func (c P2Claims) GetVSI() (string, error) { //nolint:gocritic

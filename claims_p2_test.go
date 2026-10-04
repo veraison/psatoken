@@ -269,10 +269,11 @@ func Test_P2Claims_FromJSON_negatives(t *testing.T) {
 
 		claims := newP2Claims()
 
+		// eat validates some claims on decoding
 		err = json.Unmarshal(buf, claims)
-		require.NoError(t, err)
-
-		err = claims.Validate()
+		if err == nil {
+			err = claims.Validate()
+		}
 		assert.Error(t, err, "test vector %d failed", i)
 	}
 }
@@ -291,16 +292,16 @@ func Test_P2Claims_ToJSON_ok(t *testing.T) {
 	"eat-profile": "http://arm.com/psa/2.0.0",
 	"psa-client-id": 2147483647,
 	"psa-security-lifecycle": 12288,
-	"psa-implementation-id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-	"psa-boot-seed": "AAAAAAAAAAA=",
+	"psa-implementation-id": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+	"psa-boot-seed": "AAAAAAAAAAA",
 	"psa-certification-reference": "1234567890123-12345",
 	"psa-software-components": [
 	  {
-		"measurement-value": "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=",
-		"signer-id": "BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ="
+		"measurement-value": "AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM",
+		"signer-id": "BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ"
 	  }
 	],
-	"psa-nonce": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",
+	"psa-nonce": "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE",
 	"psa-instance-id": "AQICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIC",
 	"psa-verification-service-indicator": "https://veraison.example/v1/challenge-response"	
 }`

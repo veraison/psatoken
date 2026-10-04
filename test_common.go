@@ -15,9 +15,10 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v3/jwk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/veraison/eat"
 	cose "github.com/veraison/go-cose"
 )
 
@@ -72,13 +73,13 @@ var (
 		2, 2, 2, 2, 2, 2, 2, 2,
 	}
 	testVSI              = "https://veraison.example/v1/challenge-response"
-	testMeasurementValue = []byte{
+	testMeasurementValue = eat.BinaryData{
 		3, 3, 3, 3, 3, 3, 3, 3,
 		3, 3, 3, 3, 3, 3, 3, 3,
 		3, 3, 3, 3, 3, 3, 3, 3,
 		3, 3, 3, 3, 3, 3, 3, 3,
 	}
-	testSignerID = []byte{
+	testSignerID = eat.BinaryData{
 		4, 4, 4, 4, 4, 4, 4, 4,
 		4, 4, 4, 4, 4, 4, 4, 4,
 		4, 4, 4, 4, 4, 4, 4, 4,
@@ -161,7 +162,7 @@ func getAlgAndKeyFromJWK(t *testing.T, j []byte) (cose.Algorithm, crypto.Signer)
 		alg cose.Algorithm
 	)
 
-	err = k.Raw(&key)
+	err = jwk.Export(k, &key)
 	require.NoError(t, err)
 
 	switch v := key.(type) {
@@ -190,6 +191,9 @@ func validateNegatives(t *testing.T, profile string) {
 		eStr   string
 		p2Only bool
 		p1Only bool
+		// eat validates on decoding, so some P2 claims fail to unmarshal
+		// rather than at Validate()
+		p2DecodeErr string
 	}
 
 	tCases := []tCase{
@@ -257,13 +261,15 @@ func validateNegatives(t *testing.T, profile string) {
 		},
 		// 12
 		{
-			fPath: "testvectors/json/test-nonce-invalid-short.json",
-			eStr:  `validating nonce: wrong syntax: length 4 (hash MUST be 32, 48 or 64 bytes)`,
+			fPath:       "testvectors/json/test-nonce-invalid-short.json",
+			eStr:        `validating nonce: wrong syntax: length 4 (hash MUST be 32, 48 or 64 bytes)`,
+			p2DecodeErr: `a nonce must be between 8 and 64 bytes long; found 4`,
 		},
 		// 13
 		{
-			fPath: "testvectors/json/test-nonce-invalid-long.json",
-			eStr:  `validating nonce: wrong syntax: length 65 (hash MUST be 32, 48 or 64 bytes)`,
+			fPath:       "testvectors/json/test-nonce-invalid-long.json",
+			eStr:        `validating nonce: wrong syntax: length 65 (hash MUST be 32, 48 or 64 bytes)`,
+			p2DecodeErr: `a nonce must be between 8 and 64 bytes long; found 65`,
 		},
 		// 14
 		{
@@ -272,13 +278,15 @@ func validateNegatives(t *testing.T, profile string) {
 		},
 		// 15
 		{
-			fPath: "testvectors/json/test-instance-id-invalid-short.json",
-			eStr:  `validating instance id: wrong syntax: invalid length 32 (MUST be 33 bytes)`,
+			fPath:       "testvectors/json/test-instance-id-invalid-short.json",
+			eStr:        `validating instance id: wrong syntax: invalid length 32 (MUST be 33 bytes)`,
+			p2DecodeErr: `RAND length must be exactly 16, 24, or 32 bytes; found 31 bytes`,
 		},
 		// 16
 		{
-			fPath: "testvectors/json/test-instance-id-invalid-long.json",
-			eStr:  `validating instance id: wrong syntax: invalid length 34 (MUST be 33 bytes)`,
+			fPath:       "testvectors/json/test-instance-id-invalid-long.json",
+			eStr:        `validating instance id: wrong syntax: invalid length 34 (MUST be 33 bytes)`,
+			p2DecodeErr: `RAND length must be exactly 16, 24, or 32 bytes; found 33 bytes`,
 		},
 		// 17
 		{
@@ -304,8 +312,9 @@ func validateNegatives(t *testing.T, profile string) {
 		},
 		// 21
 		{
-			fPath: "testvectors/json/test-instance-id-invalid-euid-type.json",
-			eStr:  `validating instance id: wrong syntax: invalid EUID type (MUST be RAND=0x01)`,
+			fPath:       "testvectors/json/test-instance-id-invalid-euid-type.json",
+			eStr:        `validating instance id: wrong syntax: invalid EUID type (MUST be RAND=0x01)`,
+			p2DecodeErr: `invalid UEID type 104`,
 		},
 		// 22
 		{
@@ -369,6 +378,10 @@ func validateNegatives(t *testing.T, profile string) {
 		}
 
 		p, err := loadJSONTestVectorFromFile(tc.fPath, profile)
+		if profile == Profile2Name && tc.p2DecodeErr != "" {
+			assert.ErrorContains(t, err, tc.p2DecodeErr, "failed TCase at index %d (%s)", i, tc.fPath)
+			continue
+		}
 		require.Nil(t, err, "unable to load %s: %v", tc.fPath, err)
 
 		err = p.Validate()

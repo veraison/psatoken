@@ -7,6 +7,8 @@ import (
 	_ "crypto/sha256" // used hash algorithms need to be imported explicitly
 	"encoding/json"
 	"fmt"
+
+	"github.com/veraison/eat"
 )
 
 const Profile1Name = "PSA_IOT_PROFILE_1"
@@ -25,17 +27,17 @@ func (o Profile1) GetClaims() IClaims {
 // P1Claims defines claims associated with profile "PSA_IOT_PROFILE_1".
 // See https://arm-software.github.io/psa-api/attestation/1.0/overview/report.html
 type P1Claims struct {
-	Profile                *string       `cbor:"-75000,keyasint,omitempty" json:"psa-profile"`
-	ClientID               *int32        `cbor:"-75001,keyasint" json:"psa-client-id"`
-	SecurityLifeCycle      *uint16       `cbor:"-75002,keyasint" json:"psa-security-lifecycle"`
-	ImplID                 *[]byte       `cbor:"-75003,keyasint" json:"psa-implementation-id"`
-	BootSeed               *[]byte       `cbor:"-75004,keyasint" json:"psa-boot-seed"`
-	CertificationReference *string       `cbor:"-75005,keyasint,omitempty" json:"psa-hwver,omitempty"`
-	SwComponents           ISwComponents `cbor:"-75006,keyasint,omitempty" json:"psa-software-components,omitempty"`
-	NoSwMeasurements       *uint         `cbor:"-75007,keyasint,omitempty" json:"psa-no-software-measurements,omitempty"`
-	Nonce                  *[]byte       `cbor:"-75008,keyasint" json:"psa-nonce"`
-	InstID                 *[]byte       `cbor:"-75009,keyasint" json:"psa-instance-id"`
-	VSI                    *string       `cbor:"-75010,keyasint,omitempty" json:"psa-verification-service-indicator,omitempty"`
+	Profile                *string         `cbor:"-75000,keyasint,omitempty" json:"psa-profile"`
+	ClientID               *int32          `cbor:"-75001,keyasint" json:"psa-client-id"`
+	SecurityLifeCycle      *uint16         `cbor:"-75002,keyasint" json:"psa-security-lifecycle"`
+	ImplID                 *eat.BinaryData `cbor:"-75003,keyasint" json:"psa-implementation-id"`
+	BootSeed               *eat.BinaryData `cbor:"-75004,keyasint" json:"psa-boot-seed"`
+	CertificationReference *string         `cbor:"-75005,keyasint,omitempty" json:"psa-hwver,omitempty"`
+	SwComponents           ISwComponents   `cbor:"-75006,keyasint,omitempty" json:"psa-software-components,omitempty"`
+	NoSwMeasurements       *uint           `cbor:"-75007,keyasint,omitempty" json:"psa-no-software-measurements,omitempty"`
+	Nonce                  *eat.BinaryData `cbor:"-75008,keyasint" json:"psa-nonce"`
+	InstID                 *eat.BinaryData `cbor:"-75009,keyasint" json:"psa-instance-id"`
+	VSI                    *string         `cbor:"-75010,keyasint,omitempty" json:"psa-verification-service-indicator,omitempty"`
 
 	// CanonicalProfile contains the "correct" profile name associated with
 	// this IClaims implementation (e.g. "PSA_IOT_PROFILE_1" for P1Claims).
@@ -85,7 +87,8 @@ func (c *P1Claims) SetImplID(v []byte) error {
 		return err
 	}
 
-	c.ImplID = &v
+	b := eat.BinaryData(v)
+	c.ImplID = &b
 
 	return nil
 }
@@ -99,7 +102,8 @@ func (c *P1Claims) SetBootSeed(v []byte) error {
 		)
 	}
 
-	c.BootSeed = &v
+	b := eat.BinaryData(v)
+	c.BootSeed = &b
 
 	return nil
 }
@@ -145,7 +149,8 @@ func (c *P1Claims) SetNonce(v []byte) error {
 		return err
 	}
 
-	c.Nonce = &v
+	b := eat.BinaryData(v)
+	c.Nonce = &b
 
 	return nil
 }
@@ -155,7 +160,8 @@ func (c *P1Claims) SetInstID(v []byte) error {
 		return err
 	}
 
-	c.InstID = &v
+	b := eat.BinaryData(v)
+	c.InstID = &b
 
 	return nil
 }
