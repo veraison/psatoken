@@ -163,7 +163,7 @@ func DecodeAndValidateClaimsFromCBOR(buf []byte) (IClaims, error) {
 func DecodeClaimsFromCBOR(buf []byte) (IClaims, error) {
 	selector := struct {
 		// note: code point 265 is defined as the eat_profile claim in
-		// EAT(https://datatracker.ietf.org/doc/draft-ietf-rats-eat/).
+		// EAT (https://www.rfc-editor.org/rfc/rfc9711.html).
 		// This is not specific to PSA, and so is not something that we
 		// expect PSA profiles to be able to override.
 		// The only exception to this P1, which does not use the
